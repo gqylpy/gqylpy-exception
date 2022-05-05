@@ -13,7 +13,7 @@
 ─██████████████─████████████████───────██████───────██████████████─██████───────────────██████───────
 ─────────────────────────────────────────────────────────────────────────────────────────────────────
 
-Copyright © 2022 GQYLPY. 竹永康 <gqylpy@outlook.com>
+Copyright (C) 2022 GQYLPY <http://gqylpy.com>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,23 +27,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-__version__ = 1, 0, 'dev1'
-
-"""
-"gqylpy_exception" 经过改造，它现在是一个异常类创建器，不能作为模块使用！
-导入即创建，通过属性调用或导入的任何方法，都将作为一个异常类被创建。
-
->>> import inspect
->>> import gqylpy_exception as ge
-
->>> inspect.ismodule(ge) is False
-
->>> raise ge.TimeFormatError('17:57：01')
->>> raise ge.XXError('xx')
-
->>> from gqylpy_exception import TimeFormatError
->>> raise TimeFormatError('17:58：16')
-"""
+__version__ = 1, 0, 'dev2'
+__author__ = '竹永康 <gqylpy@outlook.com>'
+__source__ = 'https://github.com/gqylpy/gqylpy-exception'
 
 
 def __getattr__(name: str):
@@ -61,9 +47,79 @@ class GqylpyError(Exception):
     """
 
 
+def TryExcept(
+        etype: 'Union[type, tuple]',
+        *,
+        name: str = None,
+        ignore: bool = False,
+        exc_return: 'Any' = None,
+        exc_callback: 'Callable' = None,
+        output_full_exc: bool = False,
+        exc_exit: bool = False
+):
+    """Exception handler.
+    The function that is decorated will have exception handling capabilities.
+
+    @param etype:               Which exceptions to handle.
+    @param name:                Exception identification, which is displayed in the exception output.
+    @param ignore:              Whether to ignore an exception or not,
+                                if so, no exception information will be logged.
+    @param exc_return:          The value returned after the exception was raised.
+    @param exc_callback:        The function that is called after the exception is raised.
+    @param output_full_exc:     Whether to print the original exception message.
+    @param exc_exit:            Exit after an exception is triggered, exit code is 4.
+
+    #-- Example:
+        @TryExcept(ValueError)
+        def func():
+            int('a')
+    """
+
+
+def Retry(
+        name: str = None,
+        *,
+        count: int = None,
+        cycle: int = None,
+        output_full_exc: bool = False,
+        retry_exc: 'Union[type, tuple]' = Exception
+):
+    """
+    When an exception is raised, attempt to reexecute.
+
+    @param name:                Exception identification which is displayed in the exception output.
+    @param count:               Total number of executions, default infinite.
+    @param cycle:               Seconds between each attempt, default 0.
+    @param output_full_exc:     Whether to print the original exception message.
+    @param retry_exc:           Which exceptions are supported to retry.
+
+    #-- Example:
+        @Retry(count=3, cycle=1)
+        def func():
+            int('a')
+
+    #-- Use in conjunction with TryExcept will support
+        both exception retry and exception handling:
+        @TryExcept(ValueError)
+        @Retry(count=3, cycle=1)
+        def func():
+            int('a')
+    """
+
+
 class _______i________s________d_______d_______c_______:
     import sys
 
     __import__(f'{__name__}.g {__name__[7:]}')
+
+    gpack = sys.modules[__name__]
     gcode = globals()[f'g {__name__[7:]}']
+
     sys.modules[__name__] = gcode.GqylpyException
+
+    for gname, gvalue in globals().items():
+        if gname[:2] == '__' and gname != '__builtins__':
+            setattr(gcode.GqylpyException, gname, gvalue)
+
+
+from typing import Any, Union, Callable
