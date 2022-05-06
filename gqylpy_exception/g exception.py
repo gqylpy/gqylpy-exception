@@ -34,54 +34,11 @@ import warnings
 import functools
 import traceback
 
-import gqylpy_log as glog
-
-
-class ObjectMode(type):
-
-    def __new__(mcs, cls, bases, attrs):
-        return super().__new__(mcs, cls, bases, attrs)()
-
-
-class GqylpyError(Exception):
-    __module__ = 'E'
-
-
-class GqylpyException(metaclass=ObjectMode):
-    history = {}
-
-    def __getattribute__(self, name: str) -> type:
-        if name[:2] == name[-2:] == '__':
-            return
-
-        if name == 'history':
-            return super().__getattribute__(name)
-
-        if name in self.history:
-            return self.history[name]
-
-        if name == 'GqylpyError':
-            return GqylpyError
-        if name == 'Retry':
-            return Retry
-
-        if name[-5:] != 'Error':
-            msg = f'Strange exception class: "{name}", ' \
-                  f'exception class name should end with "Error".'
-            warnings.warn(msg)
-
-        eclass = type(name, (GqylpyError,), {'__module__': 'E'})
-        self.history[name] = eclass
-
-        return eclass
-
-    def __getitem__(self, name: str) -> type:
-        return getattr(self, name)
+# import gqylpy_log as glog
 
 
 class TryExcept:
-
-    __module__ = __name__[:16]
+    __module__ = __package__
 
     def __init__(
             self,
@@ -135,11 +92,11 @@ class TryExcept:
         if self.output_full_exc:
             return einfo
 
-        func_name: str = func.__qualname__
-        module_name: str = func.__module__
+        module: str = func.__module__
+        funcname: str = func.__qualname__
         efile: str = func.__globals__['__file__']
 
-        name: str = self.name or f'{module_name}.{func_name}'
+        name: str = self.name or f'{module}.{funcname}'
         ename: str = type(e).__name__
 
         for line in reversed(einfo.split('\n')[1:-3]):
@@ -154,8 +111,7 @@ class TryExcept:
 
 
 class Retry:
-
-    __module__ = __name__[:16]
+    __module__ = __package__
 
     def __init__(
             self,
@@ -197,3 +153,30 @@ class Retry:
                     raise e
 
             time.sleep(self.cycle)
+
+
+class GqylpyException(metaclass=type('', (type, ), {'__new__': lambda *a: type.__new__(*a)()})):
+    history = {}
+
+    TryExcept = TryExcept
+    Retry = Retry
+
+    def __getattr__(self, name: str) -> type:
+        if name in self.history:
+            return self.history[name]
+
+        if name[-5:] != 'Error':
+            msg = f'Strange exception class "{name}", ' \
+                  f'exception class name should end with "Error".'
+            warnings.warn(msg)
+
+        eclass = type(name, (self.GqylpyError,), {'__module__': 'E'})
+        self.history[name] = eclass
+
+        return eclass
+
+    def __getitem__(self, name: str) -> type:
+        return getattr(self, name)
+
+    class GqylpyError(Exception):
+        __module__ = 'E'

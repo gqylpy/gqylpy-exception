@@ -106,3 +106,5 @@ ENV/
 # netCDF Files
 *.nc
 conda-requirements.txt
+
+self_test.py

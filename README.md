@@ -7,6 +7,7 @@
 # gqylpy-exception
 
 
-> 方便快捷地创建异常，还能处理异常，并拥有重试功能。
+> 在执行`raise`语句时直接创建异常，无需事先定义异常类，方便快捷。例如，你想抛出一个名为`NotUnderstandError`的异常，导入`import gqylpy_exception as ge`后执行`raise ge.NotUnderstandError`即可。
+
 
 <kbd>pip3 install gqylpy_exception</kbd>
