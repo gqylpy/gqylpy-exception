@@ -30,15 +30,43 @@ limitations under the License.
 import os
 import re
 import time
+import asyncio
 import warnings
 import functools
 import traceback
 
-# import gqylpy_log as glog
+import gqylpy_log as glog
+
+
+class GqylpyException(metaclass=type(
+    'SingletonMode', (type,),
+    {'__new__': lambda *a: type.__new__(*a)()}
+)):
+    __history__ = {}
+
+    def __getattr__(self, ename: str) -> type:
+        try:
+            eclass = self.__history__[ename]
+        except KeyError:
+            if ename[-5:] != 'Error':
+                warnings.warn(
+                    f'Strange exception class "{ename}", exception '
+                    f'class name should end with "Error".'
+                )
+            eclass = self.__history__[ename] = type(
+                ename, (self.GqylpyError,),
+                {'__module__': self.GqylpyError.__module__}
+            )
+        return eclass
+
+    def __getitem__(self, ename: str) -> type:
+        return getattr(self, ename)
+
+    class GqylpyError(Exception):
+        __module__ = 'E'
 
 
 class TryExcept:
-    __module__ = __package__
 
     def __init__(
             self,
@@ -111,7 +139,6 @@ class TryExcept:
 
 
 class Retry:
-    __module__ = __package__
 
     def __init__(
             self,
@@ -155,28 +182,35 @@ class Retry:
             time.sleep(self.cycle)
 
 
-class GqylpyException(metaclass=type('', (type, ), {'__new__': lambda *a: type.__new__(*a)()})):
-    history = {}
+class TryExceptAsync(TryExcept):
 
-    TryExcept = TryExcept
-    Retry = Retry
+    async def core(self, func, *a, **kw):
+        try:
+            return await func(*a, **kw)
+        except self.etype as e:
+            self.exception_handler(func, e, *a, **kw)
 
-    def __getattr__(self, name: str) -> type:
-        if name in self.history:
-            return self.history[name]
+        return self.exc_return
 
-        if name[-5:] != 'Error':
-            msg = f'Strange exception class "{name}", ' \
-                  f'exception class name should end with "Error".'
-            warnings.warn(msg)
 
-        eclass = type(name, (self.GqylpyError,), {'__module__': 'E'})
-        self.history[name] = eclass
+class RetryAsync(Retry):
 
-        return eclass
+    async def core(self, func, *a, **kw):
+        count = 0
 
-    def __getitem__(self, name: str) -> type:
-        return getattr(self, name)
+        while True:
+            try:
+                return await func(*a, **kw)
+            except self.retry_exc as e:
+                count += 1
 
-    class GqylpyError(Exception):
-        __module__ = 'E'
+                try:
+                    einfo: str = TryExcept.analysis_exception(self, func, e)
+                    glog.warning(f'[try:{count}/{self.count}] {einfo}')
+                except Exception as ee:
+                    glog.error(f'RetryError: {ee}')
+
+                if count == self.count:
+                    raise e
+
+            await asyncio.sleep(self.cycle)
