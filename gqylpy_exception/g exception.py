@@ -27,6 +27,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import logging
 import os
 import re
 import time
@@ -73,19 +74,29 @@ class TryExcept:
             etype: type or tuple,
             *,
             name: str = None,
-            ignore: bool = False,
-            exc_return=None,
-            exc_callback=None,
-            output_full_exc: bool = False,
-            exc_exit: bool = False,
+            ereturn=None,
+            ecallback=None,
+            eignore: bool = False,
+            eintact: bool = False,
+            eexit: bool = False,
+            elogger: logging.Logger = None
     ):
         self.etype = etype
         self.name = name
-        self.ignore = ignore
-        self.exc_return = exc_return
-        self.exc_callback = exc_callback
-        self.output_full_exc = output_full_exc
-        self.exc_exit = exc_exit
+        self.ignore = eignore
+        self.ereturn = ereturn
+        self.ecallback = ecallback
+        self.eintact = eintact
+        self.eexit = eexit
+
+        self.logger = elogger or glog.__init__(
+            __package__,
+            level=glog.WARNING,
+            output='stream',
+            logfmt='[%(asctime)s] [%(levelname)s] %(message)s',
+            datefmt='%F %T',
+            gname=__package__
+        )
 
     def __call__(self, func):
         @functools.wraps(func)
@@ -97,27 +108,26 @@ class TryExcept:
         try:
             return func(*a, **kw)
         except self.etype as e:
-            self.exception_handler(func, e, *a, **kw)
-            if self.exc_exit:
-                os._exit(4)
-        return self.exc_return
+            self.exception_handling(func, e, *a, **kw)
+            self.eexit and exit(4)
+        return self.ereturn
 
-    def exception_handler(self, func, e: Exception, *a, **kw):
+    def exception_handling(self, func, e: Exception, *a, **kw):
         if self.ignore:
             return
 
         try:
-            glog.error(self.analysis_exception(func, e))
+            self.logger.error(self.exception_analysis(func, e))
         except Exception as ee:
-            glog.error(f'TryExceptError: {ee}')
+            self.logger.error(f'TryExceptError: {ee}')
 
-        if self.exc_callback:
-            return self.exc_callback(*a, **kw)
+        if self.ecallback:
+            return self.ecallback(*a, **kw)
 
-    def analysis_exception(self, func, e: Exception) -> str:
+    def exception_analysis(self, func, e: Exception) -> str:
         einfo: str = traceback.format_exc()
 
-        if self.output_full_exc:
+        if self.eintact:
             return einfo
 
         module: str = func.__module__
@@ -138,7 +148,7 @@ class TryExcept:
         return f'[{name}.{eline}.{ename}] {e}'
 
 
-class Retry:
+class Retry(TryExcept):
 
     def __init__(
             self,
@@ -146,20 +156,14 @@ class Retry:
             *,
             count: int = 'N',
             cycle: int = 0,
-            output_full_exc: bool = False,
+            eintact: bool = False,
             retry_exc: type or tuple = Exception
     ):
         self.name = name
         self.count = count
         self.cycle = cycle
-        self.output_full_exc = output_full_exc
+        self.eintact = eintact
         self.retry_exc = retry_exc
-
-    def __call__(self, func):
-        @functools.wraps(func)
-        def inner(*a, **kw):
-            return self.core(func, *a, **kw)
-        return inner
 
     def core(self, func, *a, **kw):
         count = 0
@@ -171,10 +175,10 @@ class Retry:
                 count += 1
 
                 try:
-                    einfo: str = TryExcept.analysis_exception(self, func, e)
-                    glog.warning(f'[try:{count}/{self.count}] {einfo}')
+                    einfo: str = self.exception_analysis(func, e)
+                    self.logger.warning(f'[try:{count}/{self.count}] {einfo}', stacklevel=5)
                 except Exception as ee:
-                    glog.error(f'RetryError: {ee}')
+                    self.logger.error(f'RetryError: {ee}')
 
                 if count == self.count:
                     raise e
@@ -188,9 +192,9 @@ class TryExceptAsync(TryExcept):
         try:
             return await func(*a, **kw)
         except self.etype as e:
-            self.exception_handler(func, e, *a, **kw)
+            self.exception_handling(func, e, *a, **kw)
 
-        return self.exc_return
+        return self.ereturn
 
 
 class RetryAsync(Retry):
@@ -205,10 +209,10 @@ class RetryAsync(Retry):
                 count += 1
 
                 try:
-                    einfo: str = TryExcept.analysis_exception(self, func, e)
-                    glog.warning(f'[try:{count}/{self.count}] {einfo}')
+                    einfo: str = self.exception_analysis(func, e)
+                    self.logger.warning(f'[try:{count}/{self.count}] {einfo}')
                 except Exception as ee:
-                    glog.error(f'RetryError: {ee}')
+                    self.logger.error(f'RetryError: {ee}')
 
                 if count == self.count:
                     raise e

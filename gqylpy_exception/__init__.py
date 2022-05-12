@@ -27,7 +27,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-__version__ = 1, 0, 'dev4'
+__version__ = 1, 0, 'dev5'
 __author__ = '竹永康 <gqylpy@outlook.com>'
 __source__ = 'https://github.com/gqylpy/gqylpy-exception'
 
@@ -60,7 +60,7 @@ def TryExcept(
         ignore: bool = False,
         exc_return: 'Any' = None,
         exc_callback: 'Callable' = None,
-        output_full_exc: bool = False,
+        exc_intact: bool = False,
         exc_exit: bool = False
 ):
     """Exception handler.
@@ -72,7 +72,7 @@ def TryExcept(
                                 if so, no exception information will be logged.
     @param exc_return:          The value returned after the exception was raised.
     @param exc_callback:        The function that is called after the exception is raised.
-    @param output_full_exc:     Whether to print the original exception message.
+    @param exc_intact:          Whether to print the original exception message.
     @param exc_exit:            Exit after an exception is triggered, exit code is 4.
 
     #-- Example:
@@ -87,7 +87,7 @@ def Retry(
         *,
         count: int = None,
         cycle: int = None,
-        output_full_exc: bool = False,
+        exc_intact: bool = False,
         retry_exc: 'Union[type, tuple]' = Exception
 ):
     """
@@ -96,7 +96,7 @@ def Retry(
     @param name:                Exception identification which is displayed in the exception output.
     @param count:               Total number of executions, default infinite.
     @param cycle:               Seconds between each attempt, default 0.
-    @param output_full_exc:     Whether to print the original exception message.
+    @param exc_intact:     Whether to print the original exception message.
     @param retry_exc:           Which exceptions are supported to retry.
 
     #-- Example:
@@ -120,7 +120,7 @@ def TryExceptAsync(
         ignore: bool = False,
         exc_return: 'Any' = None,
         exc_callback: 'Callable' = None,
-        output_full_exc: bool = False
+        exc_intact: bool = False
 ):
     """Exception handler.
     The function that is decorated will have exception handling capabilities.
@@ -131,7 +131,7 @@ def TryExceptAsync(
                                 if so, no exception information will be logged.
     @param exc_return:          The value returned after the exception was raised.
     @param exc_callback:        The function that is called after the exception is raised.
-    @param output_full_exc:     Whether to print the original exception message.
+    @param exc_intact:     Whether to print the original exception message.
 
     #-- Example:
         @TryExceptAsync(ValueError)
@@ -145,7 +145,7 @@ def RetryAsync(
         *,
         count: int = None,
         cycle: int = None,
-        output_full_exc: bool = False,
+        exc_intact: bool = False,
         retry_exc: 'Union[type, tuple]' = Exception
 ):
     """
@@ -154,7 +154,7 @@ def RetryAsync(
     @param name:                Exception identification which is displayed in the exception output.
     @param count:               Total number of executions, default N.
     @param cycle:               Seconds between each attempt, default 0.
-    @param output_full_exc:     Whether to print the original exception message.
+    @param exc_intact:     Whether to print the original exception message.
     @param retry_exc:           Which exceptions are supported to retry.
 
     #-- Example:
