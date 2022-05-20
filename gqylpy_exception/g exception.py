@@ -27,10 +27,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import logging
-import os
 import re
 import time
+import logging
 import asyncio
 import warnings
 import functools
@@ -74,22 +73,31 @@ class TryExcept:
             etype: type or tuple,
             *,
             name: str = None,
+            eoutput: '(simple, raw, ignore)' = 'simple',
             ereturn=None,
             ecallback=None,
-            eignore: bool = False,
-            eintact: bool = False,
             eexit: bool = False,
-            elogger: logging.Logger = None
+            logger: logging.Logger = None
     ):
+        if etype.__class__ not in (type, tuple):
+            x: str = etype.__class__.__name__
+            raise GqylpyException.ParamError(
+                f'Parameter "etype" type must be a "type" or "tuple", not "{x}".'
+            )
+        if eoutput not in ('simple', 'raw', 'ignore'):
+            raise GqylpyException.ParamError(
+                f'Parameter "eoutput" optional value is ["simple", "raw", "ignore"], '
+                f'no "{eoutput}", and default is "simple".'
+            )
+
         self.etype = etype
         self.name = name
-        self.ignore = eignore
+        self.eoutput = eoutput
         self.ereturn = ereturn
         self.ecallback = ecallback
-        self.eintact = eintact
         self.eexit = eexit
 
-        self.logger = elogger or glog.__init__(
+        self.logger = logger or glog.__init__(
             __package__,
             level=glog.WARNING,
             output='stream',
@@ -113,7 +121,7 @@ class TryExcept:
         return self.ereturn
 
     def exception_handling(self, func, e: Exception, *a, **kw):
-        if self.ignore:
+        if self.eoutput == 'ignore':
             return
 
         try:
@@ -127,7 +135,7 @@ class TryExcept:
     def exception_analysis(self, func, e: Exception) -> str:
         einfo: str = traceback.format_exc()
 
-        if self.eintact:
+        if self.eoutput == 'raw':
             return einfo
 
         module: str = func.__module__
@@ -176,7 +184,9 @@ class Retry(TryExcept):
 
                 try:
                     einfo: str = self.exception_analysis(func, e)
-                    self.logger.warning(f'[try:{count}/{self.count}] {einfo}', stacklevel=5)
+                    self.logger.warning(
+                        f'[try:{count}/{self.count}] {einfo}', stacklevel=5
+                    )
                 except Exception as ee:
                     self.logger.error(f'RetryError: {ee}')
 

@@ -27,7 +27,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-__version__ = 1, 0, 'dev5'
+__version__ = 1, 0, 'dev6'
 __author__ = '竹永康 <gqylpy@outlook.com>'
 __source__ = 'https://github.com/gqylpy/gqylpy-exception'
 
@@ -60,7 +60,7 @@ def TryExcept(
         ignore: bool = False,
         exc_return: 'Any' = None,
         exc_callback: 'Callable' = None,
-        exc_intact: bool = False,
+        exc_intact: bool = False,  # output_full_exc
         exc_exit: bool = False
 ):
     """Exception handler.
