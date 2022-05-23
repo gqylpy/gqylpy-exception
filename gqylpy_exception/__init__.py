@@ -27,7 +27,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-__version__ = 1, 0, 'dev6'
+__version__ = 1, 0, 'dev7'
 __author__ = '竹永康 <gqylpy@outlook.com>'
 __source__ = 'https://github.com/gqylpy/gqylpy-exception'
 
@@ -54,26 +54,25 @@ class GqylpyError(Exception):
 
 
 def TryExcept(
-        etype: 'Union[type, tuple]',
+        etype:          'Union[type, tuple]',
         *,
-        name: str = None,
-        ignore: bool = False,
-        exc_return: 'Any' = None,
-        exc_callback: 'Callable' = None,
-        exc_intact: bool = False,  # output_full_exc
-        exc_exit: bool = False
+        ignore:         'bool'               = None,
+        output_raw_exc: 'bool'               = False,
+        logger:         'logging.Logger'     = None,
+        ereturn:        'Any'                = None,
+        ecallback:      'Callable'           = None,
+        eexit:          'bool'               = None
 ):
     """Exception handler.
     The function that is decorated will have exception handling capabilities.
 
     @param etype:               Which exceptions to handle.
-    @param name:                Exception identification, which is displayed in the exception output.
-    @param ignore:              Whether to ignore an exception or not,
-                                if so, no exception information will be logged.
-    @param exc_return:          The value returned after the exception was raised.
-    @param exc_callback:        The function that is called after the exception is raised.
-    @param exc_intact:          Whether to print the original exception message.
-    @param exc_exit:            Exit after an exception is triggered, exit code is 4.
+    @param ignore:
+    @param output_raw_exc:
+    @param logger:
+    @param ereturn:
+    @param ecallback:
+    @param eexit:
 
     #-- Example:
         @TryExcept(ValueError)
@@ -83,21 +82,23 @@ def TryExcept(
 
 
 def Retry(
-        name: str = None,
+        etype:          'Union[type, tuple]' = Exception,
         *,
-        count: int = None,
-        cycle: int = None,
-        exc_intact: bool = False,
-        retry_exc: 'Union[type, tuple]' = Exception
+        count:          'int'                = None,
+        cycle:          'int'                = None,
+        ignore:         'bool'               = None,
+        output_raw_exc: 'bool'               = None,
+        logger:         'logging.Logger'     = None,
 ):
     """
     When an exception is raised, attempt to re-execute.
 
-    @param name:                Exception identification which is displayed in the exception output.
-    @param count:               Total number of executions, default infinite.
-    @param cycle:               Seconds between each attempt, default 0.
-    @param exc_intact:     Whether to print the original exception message.
-    @param retry_exc:           Which exceptions are supported to retry.
+    @param etype:
+    @param count:
+    @param cycle:
+    @param ignore:
+    @param output_raw_exc:
+    @param logger:
 
     #-- Example:
         @Retry(count=3, cycle=1)
@@ -190,4 +191,5 @@ class _______歌________琪________怡_______玲_______萍_______云_______:
     sys.modules[__name__] = gcode.GqylpyException
 
 
+import logging
 from typing import Any, Union, Callable

@@ -29,13 +29,10 @@ limitations under the License.
 """
 import re
 import time
-import logging
 import asyncio
 import warnings
 import functools
 import traceback
-
-import gqylpy_log as glog
 
 
 class GqylpyException(metaclass=type(
@@ -70,44 +67,25 @@ class TryExcept:
 
     def __init__(
             self,
-            etype: type or tuple,
+            etype:          [type, tuple],
             *,
-            name: str = None,
-            eoutput: '(simple, raw, ignore)' = 'simple',
-            ereturn=None,
-            ecallback=None,
-            eexit: bool = False,
-            logger: logging.Logger = None
+            ignore:         bool          = False,
+            output_raw_exc: bool          = False,
+            logger:         ...           = None,
+            ereturn:        ...           = None,
+            ecallback:      ...           = None,
+            eexit:          bool          = False
     ):
-        if etype.__class__ not in (type, tuple):
-            x: str = etype.__class__.__name__
-            raise GqylpyException.ParamError(
-                f'Parameter "etype" type must be a "type" or "tuple", not "{x}".'
-            )
-        if eoutput not in ('simple', 'raw', 'ignore'):
-            raise GqylpyException.ParamError(
-                f'Parameter "eoutput" optional value is ["simple", "raw", "ignore"], '
-                f'no "{eoutput}", and default is "simple".'
-            )
-
-        self.etype = etype
-        self.name = name
-        self.eoutput = eoutput
-        self.ereturn = ereturn
-        self.ecallback = ecallback
-        self.eexit = eexit
-
-        self.logger = logger or glog.__init__(
-            __package__,
-            level=glog.WARNING,
-            output='stream',
-            logfmt='[%(asctime)s] [%(levelname)s] %(message)s',
-            datefmt='%F %T',
-            gname=__package__
-        )
+        self.etype          = etype
+        self.ignore         = ignore
+        self.output_raw_exc = output_raw_exc
+        self.logger         = logger
+        self.ereturn        = ereturn
+        self.ecallback      = ecallback
+        self.eexit          = eexit
 
     def __call__(self, func):
-        @functools.wraps(func)
+        @functools.wraps(func, updated=('__dict__', '__globals__',))
         def inner(*a, **kw):
             return self.core(func, *a, **kw)
         return inner
@@ -117,61 +95,72 @@ class TryExcept:
             return func(*a, **kw)
         except self.etype as e:
             self.exception_handling(func, e, *a, **kw)
-            self.eexit and exit(4)
         return self.ereturn
 
     def exception_handling(self, func, e: Exception, *a, **kw):
-        if self.eoutput == 'ignore':
-            return
+        local_instance: bool = self.__class__ in (TryExcept, TryExceptAsync)
 
-        try:
-            self.logger.error(self.exception_analysis(func, e))
-        except Exception as ee:
-            self.logger.error(f'TryExceptError: {ee}')
+        if not self.ignore:
+            try:
+                einfo: str = self.exception_analysis(func, e)
+            except Exception as ee:
+                einfo: str = f'{self.__class__.__name__}Error: {ee}'
 
-        if self.ecallback:
-            return self.ecallback(*a, **kw)
+            if not local_instance:
+                einfo: str = f'[try:{kw["count"]}/{self.count}] {einfo}'
+
+            if self.logger:
+                (self.logger.error if local_instance else self.logger.warning)(einfo)
+            else:
+                now: str = time.strftime('%F %T', time.localtime())
+                print(f'\033[0;31m[{now}] {einfo}\033[0m')
+
+        if local_instance:
+            self.ecallback and self.ecallback(*a, **kw)
+            self.eexit     and exit(4)
 
     def exception_analysis(self, func, e: Exception) -> str:
         einfo: str = traceback.format_exc()
 
-        if self.eoutput == 'raw':
+        if self.output_raw_exc:
             return einfo
 
-        module: str = func.__module__
-        funcname: str = func.__qualname__
-        efile: str = func.__globals__['__file__']
-
-        name: str = self.name or f'{module}.{funcname}'
-        ename: str = type(e).__name__
+        filepath: str = func.__globals__['__file__']
+        funcpath: str = f'{func.__module__}.{func.__qualname__}'
 
         for line in reversed(einfo.split('\n')[1:-3]):
-            if efile in line:
+            if filepath in line:
                 eline: str = re.search(
-                    r'line \d+', line).group().replace(' ', '')
+                    r'line \d+', line
+                ).group().replace(' ', '')
                 break
         else:
             eline: str = 'lineX'
 
-        return f'[{name}.{eline}.{ename}] {e}'
+        return f'[{funcpath}.{eline}.{e.__class__.__name__}] {e}'
 
 
 class Retry(TryExcept):
 
     def __init__(
             self,
-            name: str = None,
+            etype:          [type, tuple] = Exception,
             *,
-            count: int = 'N',
-            cycle: int = 0,
-            eintact: bool = False,
-            retry_exc: type or tuple = Exception
+            count:          int           = 'N',
+            cycle:          int           = 0,
+            ignore:         bool          = False,
+            output_raw_exc: bool          = False,
+            logger:         ...           = None,
     ):
-        self.name = name
-        self.count = count
-        self.cycle = cycle
-        self.eintact = eintact
-        self.retry_exc = retry_exc
+        self.count          = count
+        self.cycle          = cycle
+
+        super().__init__(
+            etype,
+            ignore=ignore,
+            output_raw_exc=output_raw_exc,
+            logger=logger
+        )
 
     def core(self, func, *a, **kw):
         count = 0
@@ -179,17 +168,9 @@ class Retry(TryExcept):
         while True:
             try:
                 return func(*a, **kw)
-            except self.retry_exc as e:
+            except self.etype as e:
                 count += 1
-
-                try:
-                    einfo: str = self.exception_analysis(func, e)
-                    self.logger.warning(
-                        f'[try:{count}/{self.count}] {einfo}', stacklevel=5
-                    )
-                except Exception as ee:
-                    self.logger.error(f'RetryError: {ee}')
-
+                self.exception_handling(func, e, count=count)
                 if count == self.count:
                     raise e
 
@@ -203,7 +184,6 @@ class TryExceptAsync(TryExcept):
             return await func(*a, **kw)
         except self.etype as e:
             self.exception_handling(func, e, *a, **kw)
-
         return self.ereturn
 
 
@@ -215,15 +195,9 @@ class RetryAsync(Retry):
         while True:
             try:
                 return await func(*a, **kw)
-            except self.retry_exc as e:
+            except self.etype as e:
                 count += 1
-
-                try:
-                    einfo: str = self.exception_analysis(func, e)
-                    self.logger.warning(f'[try:{count}/{self.count}] {einfo}')
-                except Exception as ee:
-                    self.logger.error(f'RetryError: {ee}')
-
+                self.exception_handling(func, e, count=count)
                 if count == self.count:
                     raise e
 
