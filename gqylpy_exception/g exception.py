@@ -29,6 +29,7 @@ limitations under the License.
 """
 import re
 import time
+import logging
 import asyncio
 import warnings
 import functools
@@ -85,7 +86,7 @@ class TryExcept:
         self.eexit          = eexit
 
     def __call__(self, func):
-        @functools.wraps(func, updated=('__dict__', '__globals__',))
+        @functools.wraps(func, updated=('__dict__', '__globals__'))
         def inner(*a, **kw):
             return self.core(func, *a, **kw)
         return inner
@@ -110,6 +111,14 @@ class TryExcept:
                 einfo: str = f'[try:{kw["count"]}/{self.count}] {einfo}'
 
             if self.logger:
+                if not(
+                        self.logger.__class__ is logging.Logger or
+                        self.logger.__name__ == 'gqylpy_log'
+                ):
+                    x: str = self.logger.__class__.__name__
+                    raise GqylpyException.ParameterError(
+                        f'Parameter "logger" must be an instance of "logging.Logger", not "{x}".'
+                    )
                 (self.logger.error if local_instance else self.logger.warning)(einfo)
             else:
                 now: str = time.strftime('%F %T', time.localtime())
@@ -152,8 +161,8 @@ class Retry(TryExcept):
             output_raw_exc: bool          = False,
             logger:         ...           = None,
     ):
-        self.count          = count
-        self.cycle          = cycle
+        self.count = count
+        self.cycle = cycle
 
         super().__init__(
             etype,

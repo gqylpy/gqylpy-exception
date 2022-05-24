@@ -27,7 +27,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-__version__ = 1, 0, 'dev7'
+__version__ = 1, 0, 'dev8'
 __author__ = '竹永康 <gqylpy@outlook.com>'
 __source__ = 'https://github.com/gqylpy/gqylpy-exception'
 
@@ -57,27 +57,34 @@ def TryExcept(
         etype:          'Union[type, tuple]',
         *,
         ignore:         'bool'               = None,
-        output_raw_exc: 'bool'               = False,
+        output_raw_exc: 'bool'               = None,
         logger:         'logging.Logger'     = None,
         ereturn:        'Any'                = None,
         ecallback:      'Callable'           = None,
         eexit:          'bool'               = None
 ):
-    """Exception handler.
-    The function that is decorated will have exception handling capabilities.
+    """
+    "TryExcept" is a decorator, handle exception raised in decorated function.
 
-    @param etype:               Which exceptions to handle.
-    @param ignore:
-    @param output_raw_exc:
-    @param logger:
-    @param ereturn:
-    @param ecallback:
-    @param eexit:
+    @param etype:          Which exceptions to handle.
+    @param ignore:         If true, exception are processed silently without output.
+                           Default false.
+    @param output_raw_exc: If true, output the raw exception information directly.
+                           Default false.
+    @param logger:         By default, exception information is output to terminal by
+                           built-in "print" function, you can specify this parameter
+                           if you want to output exception information using your
+                           logger. It will call the logger's "error" method.
+    @param ereturn:        If not None, it is returned after an exception is raised.
+    @param ecallback:      Receives a callable object and called it after an
+                           exception is raised.
+    @param eexit:          If ture, will exit the program after the exception is
+                           triggered, exit code is 4. Default false.
 
-    #-- Example:
-        @TryExcept(ValueError)
-        def func():
-            int('a')
+    >>> # Usage example:
+    >>> @TryExcept(ValueError)
+    >>> def func():
+    >>>     int('a')
     """
 
 
@@ -91,84 +98,104 @@ def Retry(
         logger:         'logging.Logger'     = None,
 ):
     """
-    When an exception is raised, attempt to re-execute.
+    "Retry" is a decorator, when an exception is raised in
+    decorated function, attempt to re-execute the decorated function.
 
-    @param etype:
-    @param count:
-    @param cycle:
-    @param ignore:
-    @param output_raw_exc:
-    @param logger:
+    @param etype:          Which exceptions to try.
+    @param count:          The retry count, default infinite.
+    @param cycle:          The retry cycle, default 0.
+    @param ignore:         If true, exception are processed silently without output.
+                           Default false.
+    @param output_raw_exc: If true, output the raw exception information directly.
+                           Default false.
+    @param logger:         By default, exception information is output to terminal by
+                           built-in "print" function, you can specify this parameter
+                           if you want to output exception information using your
+                           logger. It will call the logger's "warning" method.
 
-    #-- Example:
-        @Retry(count=3, cycle=1)
-        def func():
-            int('a')
+    >>> # Usage example:
+    >>> @Retry(count=3, cycle=1)
+    >>> def func():
+    >>>     int('a')
 
-    #-- Use in conjunction with TryExcept will support
-        both exception retry and exception handling:
-        @TryExcept(ValueError)
-        @Retry(count=3, cycle=1)
-        def func():
-            int('a')
+    >>> # Collocation "TryExcept":
+    >>> @TryExcept(ValueError)
+    >>> @Retry(count=3, cycle=1)
+    >>> def func():
+    >>>     int('a')
     """
 
 
 def TryExceptAsync(
-        etype: 'Union[type, tuple]',
+        etype:          'Union[type, tuple]',
         *,
-        name: str = None,
-        ignore: bool = False,
-        exc_return: 'Any' = None,
-        exc_callback: 'Callable' = None,
-        exc_intact: bool = False
+        ignore:         'bool'               = None,
+        output_raw_exc: 'bool'               = None,
+        logger:         'logging.Logger'     = None,
+        ereturn:        'Any'                = None,
+        ecallback:      'Callable'           = None,
+        eexit:          'bool'               = None
 ):
-    """Exception handler.
-    The function that is decorated will have exception handling capabilities.
+    """
+    "TryExceptAsync" is a decorator, handle exception raised in decorated function.
 
-    @param etype:               Which exceptions to handle.
-    @param name:                Exception identification, which is displayed in the exception output.
-    @param ignore:              Whether to ignore an exception or not,
-                                if so, no exception information will be logged.
-    @param exc_return:          The value returned after the exception was raised.
-    @param exc_callback:        The function that is called after the exception is raised.
-    @param exc_intact:     Whether to print the original exception message.
+    @param etype:          Which exceptions to handle.
+    @param ignore:         If true, exception are processed silently without output.
+                           Default false.
+    @param output_raw_exc: If true, output the raw exception information directly.
+                           Default false.
+    @param logger:         By default, exception information is output to terminal by
+                           built-in "print" function, you can specify this parameter
+                           if you want to output exception information using your
+                           logger. It will call the logger's "error" method.
+    @param ereturn:        If not None, it is returned after an exception is raised.
+    @param ecallback:      Receives a callable object and called it after an
+                           exception is raised.
+    @param eexit:          If ture, will exit the program after the exception is
+                           triggered, exit code is 4. Default false.
 
-    #-- Example:
-        @TryExceptAsync(ValueError)
-        async def func():
-            int('a')
+    >>> # Usage example:
+    >>> @TryExceptAsync(ValueError)
+    >>> def func():
+    >>>     int('a')
     """
 
 
 def RetryAsync(
-        name: str = None,
+        etype:          'Union[type, tuple]' = Exception,
         *,
-        count: int = None,
-        cycle: int = None,
-        exc_intact: bool = False,
-        retry_exc: 'Union[type, tuple]' = Exception
+        count:          'int'                = None,
+        cycle:          'int'                = None,
+        ignore:         'bool'               = None,
+        output_raw_exc: 'bool'               = None,
+        logger:         'logging.Logger'     = None,
 ):
     """
-    When an exception is raised, attempt to re-execute.
+    "RetryAsync" is a decorator, when an exception is raised in
+    decorated function, attempt to re-execute the decorated function.
 
-    @param name:                Exception identification which is displayed in the exception output.
-    @param count:               Total number of executions, default N.
-    @param cycle:               Seconds between each attempt, default 0.
-    @param exc_intact:     Whether to print the original exception message.
-    @param retry_exc:           Which exceptions are supported to retry.
+    @param etype:          Which exceptions to try.
+    @param count:          The retry count, default infinite.
+    @param cycle:          The retry cycle, default 0.
+    @param ignore:         If true, exception are processed silently without output.
+                           Default false.
+    @param output_raw_exc: If true, output the raw exception information directly.
+                           Default false.
+    @param logger:         By default, exception information is output to terminal by
+                           built-in "print" function, you can specify this parameter
+                           if you want to output exception information using your
+                           logger. It will call the logger's "warning" method.
 
-    #-- Example:
-        @RetryAsync(count=3, cycle=1)
-        async def func():
-            int('a')
+    >>> # Usage example:
+    >>> @RetryAsync(count=3, cycle=1)
+    >>> def func():
+    >>>     int('a')
 
-    #-- Use in conjunction with TryExcept will support
-    both exception retry and exception handling:
-        @TryExceptAsync(ValueError)
-        @RetryAsync(count=3, cycle=1)
-        async def func():
-            int('a')
+    >>> # Collocation "TryExceptAsync":
+    >>> @TryExceptAsync(ValueError)
+    >>> @RetryAsync(count=3, cycle=1)
+    >>> def func():
+    >>>     int('a')
     """
 
 
