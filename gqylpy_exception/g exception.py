@@ -28,6 +28,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import re
+import sys
 import time
 import logging
 import asyncio
@@ -113,20 +114,21 @@ class TryExcept:
             if self.logger:
                 if not(
                         self.logger.__class__ is logging.Logger or
-                        self.logger.__name__ == 'gqylpy_log'
+                        getattr(self.logger, '__name__', None) == 'gqylpy_log'
                 ):
                     x: str = self.logger.__class__.__name__
                     raise GqylpyException.ParameterError(
-                        f'Parameter "logger" must be an instance of "logging.Logger", not "{x}".'
+                        f'Parameter "logger" must be an instance '
+                        f'of "logging.Logger", not "{x}".'
                     )
                 (self.logger.error if local_instance else self.logger.warning)(einfo)
             else:
                 now: str = time.strftime('%F %T', time.localtime())
-                print(f'\033[0;31m[{now}] {einfo}\033[0m')
+                sys.stderr.write(f'[{now}] {einfo}\n')
 
         if local_instance:
-            self.ecallback and self.ecallback(*a, **kw)
-            self.eexit     and exit(4)
+            self.ecallback and self.ecallback(e, func, *a, **kw)
+            self.eexit and exit(4)
 
     def exception_analysis(self, func, e: Exception) -> str:
         einfo: str = traceback.format_exc()
