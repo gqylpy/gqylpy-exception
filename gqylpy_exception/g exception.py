@@ -37,10 +37,9 @@ import functools
 import traceback
 
 
-class GqylpyException(metaclass=type(
-    'SingletonMode', (type,),
-    {'__new__': lambda *a: type.__new__(*a)()}
-)):
+class GqylpyException(
+    metaclass=type('', (type,), {'__new__': lambda *a: type.__new__(*a)()})
+):
     __history__ = {}
 
     def __getattr__(self, ename: str) -> type:
@@ -113,7 +112,7 @@ class TryExcept:
 
             if self.logger:
                 if not(
-                        self.logger.__class__ is logging.Logger or
+                        isinstance(self.logger, logging.Logger) or
                         getattr(self.logger, '__name__', None) == 'gqylpy_log'
                 ):
                     x: str = self.logger.__class__.__name__
@@ -121,7 +120,9 @@ class TryExcept:
                         f'Parameter "logger" must be an instance '
                         f'of "logging.Logger", not "{x}".'
                     )
-                (self.logger.error if local_instance else self.logger.warning)(einfo)
+                (self.logger.error if local_instance else self.logger.warning)(
+                    einfo, stacklevel=4 if local_instance else 6
+                )
             else:
                 now: str = time.strftime('%F %T', time.localtime())
                 sys.stderr.write(f'[{now}] {einfo}\n')
@@ -157,13 +158,35 @@ class Retry(TryExcept):
             self,
             etype:          [type, tuple] = Exception,
             *,
-            count:          int           = 'N',
+            count:          int           = 0,
             cycle:          int           = 0,
             ignore:         bool          = False,
             output_raw_exc: bool          = False,
             logger:         ...           = None,
     ):
-        self.count = count
+        if not (count.__class__ is int and count >= 0):
+            if not (count.__class__ is str and count.isdigit()):
+                raise GqylpyException.ParameterError(
+                    'Parameter "count" must be a '
+                    f'positive integer or 0, not "{count}".'
+                )
+            count = int(count)
+
+        if cycle.__class__ not in (int, float):
+            try:
+                cycle = float(cycle)
+            except (TypeError, ValueError):
+                raise GqylpyException.ParameterError(
+                    'Parameter "cycle" must be a '
+                    f'positive number or 0, not "{cycle}"'
+                )
+        if cycle < 0:
+            raise GqylpyException.ParameterError(
+                'Parameter "cycle" must be a '
+                f'positive number or 0, not "{cycle}"'
+            )
+
+        self.count = count or 'N'
         self.cycle = cycle
 
         super().__init__(

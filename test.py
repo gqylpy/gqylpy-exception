@@ -1,3 +1,3 @@
 import gqylpy_exception as ge
 
-raise ge.AnyError(...)
+raise ge.AnError(...)

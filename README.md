@@ -32,6 +32,7 @@ e: ge.GqylpyError = ge['AnError'](...)
 
 另外，`gqylpy_exception` 不会重复创建异常类，创建过的异常类将存入 `ge.__history__` 字典，当你再次创建时从这个字典中取值。
 
+
 ### 使用装饰器 `TryExcept` 处理函数中引发的异常
 ```python
 from gqylpy_exception import TryExcept
@@ -54,18 +55,50 @@ def TryExcept(
 ):
     ...
 ```
-- 参数 `ingore=True` 将静默处理异常，没有任何输出。
-- 参数 `output_raw_exc=True` 将输出完整的异常信息，注意其优先级低于 `ignore`。
-- 参数 `logger` 接收一个日志记录器对象，`TryExcept` 希望使用日志记录器记录异常。缺省情况下使用 `sys.stderr` 输出异常。
-- 参数 `ereturn` 用于指定被装饰函数在引发异常后的返回值，默认为 `None`。
-- 参数 `ecallback` 接收一个可调用对象，这个可调用对象还需接收多个参数：引发的异常对象，被装饰的函数和它的所有参数。
-- 参数 `eexit=True` 将在引发异常后抛出 `SystemExit(4)`。
+__参数 `etype`__<br>
+要处理哪种异常，使用元祖传入多个。
+
+__参数 `ingore`__<br>
+设为 `True` 将静默处理异常，没有任何输出。
+
+__参数 `output_raw_exc`__<br>
+设为 `True` 将输出完整的异常信息，注意其优先级低于 `ignore`。 
+
+__参数 `logger`__<br>
+接收一个日志记录器对象，`TryExcept` 希望使用日志记录器输出异常信息，它调用日志记录器的 `error` 方法。<br>
+缺省情况下使用 `sys.stderr` 输出异常。
+
+__参数 `ereturn`__<br>
+若被装饰的函数中引发了异常，将返回此参数，默认为 `None`。<br>
+它在某些可以设定非 `None` 默认返回值的函数中非常好用。
+
+__参数 `ecallback`__<br>
+接收一个可调用对象，若被装饰的函数中引发了异常将调用它。<br>
+这个可调用对象还需接收多个参数：引发的异常对象，被装饰的函数对象，被装饰的函数的所有参数。
+
+__参数 `eexit`__<br>
+设为 `True` 将在引发异常后抛出 `SystemExit(4)`，如果有 `ecallback` 则会先执行 `ecallback`。
 
 ### 使用装饰器 `Retry` 重试函数中引发的异常
 ```python
-import gqylpy_exception as ge
+from gqylpy_exception import Retry
 
-@ge.Retry(count=3, cycle=1)
+@Retry(count=3, cycle=1)
 def func():
     int('a')
 ```
+若被装饰的函数中引发了异常，将尝试重新执行被装饰的函数，默认重试 `Exception` 及其子类的所有异常。
+像上面这样调用 `Retry(count=3, cycle=1)` 表示最大执行3次，每次间隔1秒。完整的参数如下：
+```python
+def Retry(
+        etype:          Union[type, tuple] = Exception,
+        *,
+        count:          int                = inf,
+        cycle:          Union[int, float]  = 0,
+        ignore:         bool               = False,
+        output_raw_exc: bool               = False,
+        logger:         logging.Logger     = None,
+):
+    ...
+```
+`Retry` 继承 `TryExcept`，你可以在 `TryExcept` 中找到参数说明，但注意 `Retry` 调用日志记录器的 `warning` 方法。

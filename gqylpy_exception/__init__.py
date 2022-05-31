@@ -27,7 +27,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-__version__ = 1, 0, 'dev10'
+__version__ = 1, 0
 __author__ = '竹永康 <gqylpy@outlook.com>'
 __source__ = 'https://github.com/gqylpy/gqylpy-exception'
 
@@ -92,7 +92,7 @@ def Retry(
         etype:          'Union[type, tuple]' = Exception,
         *,
         count:          'int'                = None,
-        cycle:          'int'                = None,
+        cycle:          'Union[int, float]'  = None,
         ignore:         'bool'               = None,
         output_raw_exc: 'bool'               = None,
         logger:         'logging.Logger'     = None,
@@ -102,7 +102,7 @@ def Retry(
     function decorated, attempt to re-execute the function decorated.
 
     @param etype:          Which exceptions to try.
-    @param count:          The retry count, default infinite.
+    @param count:          The retry count, 0 means infinite, default infinite.
     @param cycle:          The retry cycle, default 0.
     @param ignore:         If true, exception are processed silently without output,
                            default false.
@@ -163,7 +163,7 @@ def RetryAsync(
         etype:          'Union[type, tuple]' = Exception,
         *,
         count:          'int'                = None,
-        cycle:          'int'                = None,
+        cycle:          'Union[int, float]'  = None,
         ignore:         'bool'               = None,
         output_raw_exc: 'bool'               = None,
         logger:         'logging.Logger'     = None,
@@ -173,7 +173,7 @@ def RetryAsync(
     function decorated, attempt to re-execute the  function decorated.
 
     @param etype:          Which exceptions to try.
-    @param count:          The retry count, default infinite.
+    @param count:          The retry count, 0 means infinite, default infinite.
     @param cycle:          The retry cycle, default 0.
     @param ignore:         If true, exception are processed silently without output,
                            default false.
