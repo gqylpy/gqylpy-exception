@@ -72,7 +72,7 @@ __参数 `output_raw_exc`__<br>
 
 __参数 `logger`__<br>
 接收一个日志记录器对象，`TryExcept` 希望使用日志记录器输出异常信息，它调用日志记录器的 `error` 方法。<br>
-缺省情况下使用 `sys.stderr` 输出异常。
+缺省情况下使用 `sys.stderr` 输出异常信息。
 
 __参数 `ereturn`__<br>
 若被装饰的函数中引发了异常，将返回此参数，默认为 `None`。<br>
