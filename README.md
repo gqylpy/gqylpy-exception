@@ -30,6 +30,12 @@ e: ge.GqylpyError = ge['AnError'](...)
 ```
 是的，使用 `gqylpy_exception` 创建的异常类都继承 `GqylpyError`，`GqylpyError` 继承内置的 `Exception`。
 
+还有一种用法，导入即创建：
+```python
+from gqylpy_exception import AnError
+
+raise AnError(...)
+```
 另外，`gqylpy_exception` 不会重复创建异常类，创建过的异常类将存入 `ge.__history__` 字典，当你再次创建时从这个字典中取值。
 
 
@@ -78,6 +84,7 @@ __参数 `ecallback`__<br>
 
 __参数 `eexit`__<br>
 设为 `True` 将在引发异常后抛出 `SystemExit(4)`，如果有 `ecallback` 则会先执行 `ecallback`。
+
 
 ### 使用装饰器 `Retry` 重试函数中引发的异常
 ```python
