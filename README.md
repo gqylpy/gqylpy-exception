@@ -94,7 +94,7 @@ from gqylpy_exception import Retry
 def func():
     int('a')
 ```
-若被装饰的函数中引发了异常，将尝试重新执行被装饰的函数，默认重试 `Exception` 及其子类的所有异常。
+若被装饰的函数中引发了异常，会尝试重新执行被装饰的函数，默认重试 `Exception` 及其子类的所有异常。
 像上面这样调用 `Retry(count=3, cycle=1)` 表示最大执行3次，每次间隔1秒。完整的参数如下：
 ```python
 def Retry(
@@ -109,3 +109,13 @@ def Retry(
     ...
 ```
 `Retry` 继承 `TryExcept`，你可以在 `TryExcept` 中找到参数说明，但注意 `Retry` 调用日志记录器的 `warning` 方法。
+
+结合 `TryExcept` 使用，既能重试异常又能处理异常：
+```python
+from gqylpy_exception import TryExcept, Retry
+
+@TryExcept(ValueError)
+@Retry(count=3, cycle=1)
+def func():
+    int('a')
+```

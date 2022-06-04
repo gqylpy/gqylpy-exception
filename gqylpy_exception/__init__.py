@@ -27,7 +27,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-__version__ = 1, 1, 'dev1'
+__version__ = 1, 1, 'dev2'
 __author__ = '竹永康 <gqylpy@outlook.com>'
 __source__ = 'https://github.com/gqylpy/gqylpy-exception'
 
@@ -124,7 +124,7 @@ def Retry(
     """
 
 
-def TryExceptAsync(
+async def TryExceptAsync(
         etype:          'Union[type, tuple]',
         *,
         ignore:         'bool'               = None,
@@ -135,7 +135,7 @@ def TryExceptAsync(
         eexit:          'bool'               = None
 ):
     """
-    "TryExceptAsync" is a decorator, handle exception raised in function decorated.
+    "TryExceptAsync" is a decorator, handle exception raised in asynchronous function decorated.
 
     @param etype:          Which exceptions to handle.
     @param ignore:         If true, exception are processed silently without output,
@@ -159,7 +159,7 @@ def TryExceptAsync(
     """
 
 
-def RetryAsync(
+async def RetryAsync(
         etype:          'Union[type, tuple]' = Exception,
         *,
         count:          'int'                = None,
@@ -169,8 +169,8 @@ def RetryAsync(
         logger:         'logging.Logger'     = None,
 ):
     """
-    "RetryAsync" is a decorator, when an exception is raised in
-    function decorated, attempt to re-execute the  function decorated.
+    "RetryAsync" is a decorator, when an exception is raised in asynchronous
+    function decorated, attempt to re-execute the asynchronous function decorated.
 
     @param etype:          Which exceptions to try.
     @param count:          The retry count, 0 means infinite, default infinite.
