@@ -13,7 +13,7 @@
 ─██████████████─████████████████───────██████───────██████████████─██████───────────────██████───────
 ─────────────────────────────────────────────────────────────────────────────────────────────────────
 
-Copyright (C) 2022 GQYLPY <http://gqylpy.com>
+Copyright (c) 2022 GQYLPY <http://gqylpy.com>. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -52,8 +52,7 @@ class GqylpyException(
                     f'class name should end with "Error".'
                 )
             eclass = self.__history__[ename] = type(
-                ename, (self.GqylpyError,),
-                {'__module__': self.GqylpyError.__module__}
+                ename, (self.GqylpyError,), {'__module__': 'builtins'}
             )
         return eclass
 
@@ -61,7 +60,7 @@ class GqylpyException(
         return getattr(self, ename)
 
     class GqylpyError(Exception):
-        __module__ = 'E'
+        __module__ = 'builtins'
 
 
 class TryExcept:
