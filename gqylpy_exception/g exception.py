@@ -33,6 +33,7 @@ import time
 import logging
 import asyncio
 import warnings
+import builtins
 import functools
 import traceback
 
@@ -54,6 +55,7 @@ class GqylpyException(
             eclass = self.__history__[ename] = type(
                 ename, (self.GqylpyError,), {'__module__': 'builtins'}
             )
+            setattr(builtins, ename, eclass)
         return eclass
 
     def __getitem__(self, ename: str) -> type:
@@ -61,6 +63,9 @@ class GqylpyException(
 
     class GqylpyError(Exception):
         __module__ = 'builtins'
+
+
+builtins.GqylpyException = GqylpyException
 
 
 class TryExcept:
