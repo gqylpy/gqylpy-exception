@@ -27,7 +27,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-__version__ = 1, 1, 1
+__version__ = 1, 1, 2
 __author__ = '竹永康 <gqylpy@outlook.com>'
 __source__ = 'https://github.com/gqylpy/gqylpy-exception'
 
@@ -95,7 +95,7 @@ def Retry(
         cycle:          'Union[int, float]'  = None,
         ignore:         'bool'               = None,
         output_raw_exc: 'bool'               = None,
-        logger:         'logging.Logger'     = None,
+        logger:         'logging.Logger'     = None
 ):
     """
     "Retry" is a decorator, when an exception is raised in
@@ -166,7 +166,7 @@ async def RetryAsync(
         cycle:          'Union[int, float]'  = None,
         ignore:         'bool'               = None,
         output_raw_exc: 'bool'               = None,
-        logger:         'logging.Logger'     = None,
+        logger:         'logging.Logger'     = None
 ):
     """
     "RetryAsync" is a decorator, when an exception is raised in asynchronous
@@ -195,11 +195,10 @@ async def RetryAsync(
     """
 
 
-class _______歌________琪________怡_______玲_______萍_______云_______:
+class _xe6_xad_x8c_xe7_x90_xaa_xe6_x80_xa1_xe7_x8e_xb2_xe8_x90_x8d_xe4_xba_x91:
     import sys
 
     __import__(f'{__name__}.g {__name__[7:]}')
-    gpack = sys.modules[__name__]
     gcode = globals()[f'g {__name__[7:]}']
 
     for gname, gvalue in globals().items():
