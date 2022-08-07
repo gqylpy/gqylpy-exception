@@ -11,7 +11,7 @@
 > 导入 `import gqylpy_exception as ge` 后直接执行 `raise ge.NotUnderstandError` 即可。
 > 
 > `gqylpy-exception` 还提供了两个处理异常的装饰器：
-> - `TryExcept`: 截获被装饰的函数中触发的异常。并将异常信息输出到终端，不是抛出。
+> - `TryExcept`: 截获被装饰的函数中引发的异常，并将异常信息输出到终端，不是抛出。
 > - `Retry`: 同上，并会尝试重新执行，通过参数控制次数，在达到最大次数后抛出异常。
 
 <kbd>pip3 install gqylpy_exception</kbd>
