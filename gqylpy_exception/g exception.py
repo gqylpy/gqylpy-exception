@@ -55,7 +55,12 @@ class GqylpyException(
             eclass = self.__history__[ename] = type(
                 ename, (self.GqylpyError,), {'__module__': 'builtins'}
             )
-            setattr(builtins, ename, eclass)
+            if hasattr(builtins, ename):
+                raise GqylpyException.ExceptionClassIsBuiltinsError(
+                    f'exception class "{ename}" is builtins.'
+                )
+            else:
+                setattr(builtins, ename, eclass)
         return eclass
 
     def __getitem__(self, ename: str) -> type:
@@ -121,12 +126,11 @@ class TryExcept:
                 ):
                     x: str = self.logger.__class__.__name__
                     raise GqylpyException.ParameterError(
-                        f'Parameter "logger" must be an instance '
+                        f'parameter "logger" must be an instance '
                         f'of "logging.Logger", not "{x}".'
                     )
                 (self.logger.error if local_instance else self.logger.warning)(
-                    einfo, stacklevel=4 if local_instance else 6
-                )
+                    einfo, stacklevel=4 if local_instance else 6)
             else:
                 now: str = time.strftime('%F %T', time.localtime())
                 sys.stderr.write(f'[{now}] {einfo}\n')
@@ -171,7 +175,7 @@ class Retry(TryExcept):
         if not (count.__class__ is int and count >= 0):
             if not (count.__class__ is str and count.isdigit()):
                 raise GqylpyException.ParameterError(
-                    'Parameter "count" must be a '
+                    'parameter "count" must be a '
                     f'positive integer or 0, not "{count}".'
                 )
             count = int(count)
@@ -181,12 +185,12 @@ class Retry(TryExcept):
                 cycle = float(cycle)
             except (TypeError, ValueError):
                 raise GqylpyException.ParameterError(
-                    'Parameter "cycle" must be a '
+                    'parameter "cycle" must be a '
                     f'positive number or 0, not "{cycle}"'
                 )
         if cycle < 0:
             raise GqylpyException.ParameterError(
-                'Parameter "cycle" must be a '
+                'parameter "cycle" must be a '
                 f'positive number or 0, not "{cycle}"'
             )
 

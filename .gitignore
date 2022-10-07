@@ -108,4 +108,3 @@ ENV/
 conda-requirements.txt
 
 self_test.py
-changelog.yml
