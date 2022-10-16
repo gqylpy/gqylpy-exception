@@ -38,15 +38,24 @@ import functools
 import traceback
 
 
-class GqylpyException(
-    metaclass=type('', (type,), {'__new__': lambda *a: type.__new__(*a)()})
-):
+class GqylpyException:
     __history__ = {}
 
     def __getattr__(self, ename: str) -> type:
         try:
             eclass = self.__history__[ename]
         except KeyError:
+            if hasattr(builtins, ename):
+                raise self.ExceptionClassIsBuiltinsError(
+                    f'exception class "{ename}" is builtins.'
+                )
+            # Some special modules may attempt to call non-built-in magic
+            # method, such as `copy`, `pickle`. Compatible for this purpose.
+            if ename[:2] == ename[-2:] == '__' and \
+                    ename[2] != '_' and ename[-3] != '_':
+                raise AttributeError(
+                    f'"{__package__}" has no attribute "{ename}"'
+                )
             if ename[-5:] != 'Error':
                 warnings.warn(
                     f'Strange exception class "{ename}", exception '
@@ -55,12 +64,8 @@ class GqylpyException(
             eclass = self.__history__[ename] = type(
                 ename, (self.GqylpyError,), {'__module__': 'builtins'}
             )
-            if hasattr(builtins, ename):
-                raise GqylpyException.ExceptionClassIsBuiltinsError(
-                    f'exception class "{ename}" is builtins.'
-                )
-            else:
-                setattr(builtins, ename, eclass)
+            # Compatible with object serialization.
+            setattr(builtins, ename, eclass)
         return eclass
 
     def __getitem__(self, ename: str) -> type:
@@ -70,6 +75,7 @@ class GqylpyException(
         __module__ = 'builtins'
 
 
+# Compatible with object serialization, against `GqylpyException.GqylpyError`.
 builtins.GqylpyException = GqylpyException
 
 
@@ -78,7 +84,7 @@ class TryExcept:
     def __init__(
             self,
             etype:          [type, tuple],
-            *,
+            /, *,
             ignore:         bool          = False,
             output_raw_exc: bool          = False,
             logger:         ...           = None,

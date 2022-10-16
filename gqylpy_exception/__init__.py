@@ -27,18 +27,18 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-__version__ = 1, 1, 3
+__version__ = 1, 2
 __author__ = '竹永康 <gqylpy@outlook.com>'
 __source__ = 'https://github.com/gqylpy/gqylpy-exception'
 
 
-def __getattr__(ename: str):
+def __getattr__(ename: str) -> type:
     if ename not in __history__[ename]:
         __history__[ename] = type(ename, (GqylpyError,), {})
     return __history__[ename]
 
 
-def __getitem__(name: str):
+def __getitem__(name: str) -> type:
     return __getattr__(name)
 
 
@@ -54,14 +54,14 @@ class GqylpyError(Exception):
 
 
 def TryExcept(
-        etype:          'Union[type, tuple]',
-        *,
-        ignore:         'bool'               = None,
-        output_raw_exc: 'bool'               = None,
-        logger:         'logging.Logger'     = None,
-        ereturn:        'Any'                = None,
-        ecallback:      'Callable'           = None,
-        eexit:          'bool'               = None
+        etype:          'Union[type, Tuple[type, ...]]',
+        /, *,
+        ignore:         'bool'                                      = None,
+        output_raw_exc: 'bool'                                      = None,
+        logger:         'logging.Logger'                            = None,
+        ereturn:        'Any'                                       = None,
+        ecallback:      'Callable[[Exception, Callable, ...], Any]' = None,
+        eexit:          'bool'                                      = None
 ):
     """
     "TryExcept" is a decorator, handle exception raised in function decorated.
@@ -93,13 +93,13 @@ def TryExcept(
 
 
 def Retry(
-        etype:          'Union[type, tuple]' = Exception,
+        etype:          'Union[type, Tuple[type, ...]]' = Exception,
         *,
-        count:          'int'                = None,
-        cycle:          'Union[int, float]'  = None,
-        ignore:         'bool'               = None,
-        output_raw_exc: 'bool'               = None,
-        logger:         'logging.Logger'     = None
+        count:          'int'                           = None,
+        cycle:          'Union[int, float]'             = None,
+        ignore:         'bool'                          = None,
+        output_raw_exc: 'bool'                          = None,
+        logger:         'logging.Logger'                = None
 ):
     """
     "Retry" is a decorator, when an exception is raised in function decorated,
@@ -120,26 +120,26 @@ def Retry(
                            information using your logger, it will call the
                            logger's `error` method.
 
-    @Retry(count=3, cycle=1)
-    def func():
-        int('a')
+        @Retry(count=3, cycle=1)
+        def func():
+            int('a')
 
-    @TryExcept(ValueError)
-    @Retry(count=3, cycle=1)
-    def func():
-        int('a')
+        @TryExcept(ValueError)
+        @Retry(count=3, cycle=1)
+        def func():
+            int('a')
     """
 
 
 async def TryExceptAsync(
-        etype:          'Union[type, tuple]',
-        *,
-        ignore:         'bool'               = None,
-        output_raw_exc: 'bool'               = None,
-        logger:         'logging.Logger'     = None,
-        ereturn:        'Any'                = None,
-        ecallback:      'Callable'           = None,
-        eexit:          'bool'               = None
+        etype:          'Union[type, Tuple[type, ...]]',
+        /, *,
+        ignore:         'bool'                                      = None,
+        output_raw_exc: 'bool'                                      = None,
+        logger:         'logging.Logger'                            = None,
+        ereturn:        'Any'                                       = None,
+        ecallback:      'Callable[[Exception, Callable, ...], Any]' = None,
+        eexit:          'bool'                                      = None
 ):
     """
     "TryExceptAsync" is a decorator, handle exception raised in asynchronous
@@ -165,20 +165,20 @@ async def TryExceptAsync(
     @param eexit:          If ture, will exit the program after the exception is
                            triggered, exit code is 4. Default false.
 
-    @TryExceptAsync(ValueError)
-    async def func():
-        int('a')
+        @TryExceptAsync(ValueError)
+        async def func():
+            int('a')
     """
 
 
 async def RetryAsync(
-        etype:          'Union[type, tuple]' = Exception,
+        etype:          'Union[type, Tuple[type, ...]]' = Exception,
         *,
-        count:          'int'                = None,
-        cycle:          'Union[int, float]'  = None,
-        ignore:         'bool'               = None,
-        output_raw_exc: 'bool'               = None,
-        logger:         'logging.Logger'     = None
+        count:          'int'                           = None,
+        cycle:          'Union[int, float]'             = None,
+        ignore:         'bool'                          = None,
+        output_raw_exc: 'bool'                          = None,
+        logger:         'logging.Logger'                = None
 ):
     """
     "RetryAsync" is a decorator, when an exception is raised in asynchronous
@@ -199,14 +199,14 @@ async def RetryAsync(
                            information using your logger, it will call the
                            logger's `error` method.
 
-    @RetryAsync(count=3, cycle=1)
-    async def func():
-        int('a')
+        @RetryAsync(count=3, cycle=1)
+        async def func():
+            int('a')
 
-    @TryExceptAsync(ValueError)
-    @RetryAsync(count=3, cycle=1)
-    async def func():
-        int('a')
+        @TryExceptAsync(ValueError)
+        @RetryAsync(count=3, cycle=1)
+        async def func():
+            int('a')
     """
 
 
@@ -215,18 +215,19 @@ class _xe6_xad_x8c_xe7_x90_xaa_xe6_x80_xa1_xe7_x8e_xb2_xe8_x90_x8d_xe4_xba_x91:
 
     __import__(f'{__name__}.g {__name__[7:]}')
     gcode = globals()[f'g {__name__[7:]}']
+    ge = gcode.GqylpyException()
 
     for gname, gvalue in globals().items():
         if gname[0] != '_' and hasattr(gcode, gname):
             gfunc = getattr(gcode, gname)
             gfunc.__module__ = __package__
-            setattr(gcode.GqylpyException, gname, gfunc)
+            setattr(ge, gname, gfunc)
         if gname[:2] == '__' and gname != '__builtins__':
-            setattr(gcode.GqylpyException, gname, gvalue)
+            setattr(ge, gname, gvalue)
 
-    gcode.GqylpyException.__module__ = __package__
-    sys.modules[__name__] = gcode.GqylpyException
+    ge.__module__ = __package__
+    sys.modules[__name__] = ge.GqylpyException = ge
 
 
 import logging
-from typing import Any, Union, Callable
+from typing import Any, Tuple, Union, Callable

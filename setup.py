@@ -9,6 +9,7 @@ setuptools.setup(
     license='Apache 2.0',
     url='http://gqylpy.com',
     project_urls={'Source': g.__source__},
+    description='在执行 raise 语句的同时创建异常类，无需事先定义异常类，方便快捷。',
     long_description=open('README.md', encoding='utf8').read(),
     long_description_content_type='text/markdown',
     packages=[g.__name__],

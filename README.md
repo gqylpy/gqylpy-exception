@@ -1,5 +1,5 @@
 [<img alt="LOGO" src="http://www.gqylpy.com/static/img/favicon.ico" height="21" width="21"/>](http://www.gqylpy.com)
-[![Version](https://img.shields.io/pypi/v/gqylpy_exception)](https://pypi.org/project/gqylpy_exception)
+[![Release](https://img.shields.io/github/release/gqylpy/gqylpy-exception.svg?style=flat-square")](https://github.com/gqylpy/gqylpy-exception/releases/latest)
 [![Python Versions](https://img.shields.io/pypi/pyversions/gqylpy_exception)](https://pypi.org/project/gqylpy_exception)
 [![License](https://img.shields.io/pypi/l/gqylpy_exception)](https://github.com/gqylpy/gqylpy-exception/blob/master/LICENSE)
 [![Downloads](https://pepy.tech/badge/gqylpy_exception/month)](https://pepy.tech/project/gqylpy_exception)
@@ -50,14 +50,14 @@ def func():
 默认的处理流程是将异常简要信息输出到终端。当然，也可以输出到文件或做其它处理，通过参数控制：
 ```python
 def TryExcept(
-        etype:          Union[type, tuple],
-        *,
-        ignore:         bool               = False,
-        output_raw_exc: bool               = False,
-        logger:         logging.Logger     = None,
-        ereturn:        Any                = None,
-        ecallback:      Callable           = None,
-        eexit:          bool               = False
+        etype:          Union[type, Tuple[type, ...]],
+        /, *,
+        ignore:         bool                                      = False,
+        output_raw_exc: bool                                      = False,
+        logger:         logging.Logger                            = None,
+        ereturn:        Any                                       = None,
+        ecallback:      Callable[[Exception, Callable, ...], Any] = None,
+        eexit:          bool                                      = False
 ):
     ...
 ```
@@ -98,13 +98,13 @@ def func():
 像上面这样调用 `Retry(count=3, cycle=1)` 表示最大执行3次，每次间隔1秒。完整的参数如下：
 ```python
 def Retry(
-        etype:          Union[type, tuple] = Exception,
+        etype:          Union[type, Tuple[type, ...]] = Exception,
         *,
-        count:          int                = inf,
-        cycle:          Union[int, float]  = 0,
-        ignore:         bool               = False,
-        output_raw_exc: bool               = False,
-        logger:         logging.Logger     = None,
+        count:          int                           = inf,
+        cycle:          Union[int, float]             = 0,
+        ignore:         bool                          = False,
+        output_raw_exc: bool                          = False,
+        logger:         logging.Logger                = None
 ):
     ...
 ```
