@@ -27,7 +27,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-__version__ = 1, 2
+__version__ = 1, 2, 1
 __author__ = '竹永康 <gqylpy@outlook.com>'
 __source__ = 'https://github.com/gqylpy/gqylpy-exception'
 
@@ -56,12 +56,12 @@ class GqylpyError(Exception):
 def TryExcept(
         etype:          'Union[type, Tuple[type, ...]]',
         /, *,
-        ignore:         'bool'                                      = None,
-        output_raw_exc: 'bool'                                      = None,
-        logger:         'logging.Logger'                            = None,
-        ereturn:        'Any'                                       = None,
-        ecallback:      'Callable[[Exception, Callable, ...], Any]' = None,
-        eexit:          'bool'                                      = None
+        ignore:         'bool'                                       = None,
+        output_raw_exc: 'bool'                                       = None,
+        logger:         'logging.Logger'                             = None,
+        ereturn:        'Any'                                        = None,
+        ecallback:      'Callable[[Exception, Callable, ...], None]' = None,
+        eexit:          'bool'                                       = None
 ):
     """
     "TryExcept" is a decorator, handle exception raised in function decorated.

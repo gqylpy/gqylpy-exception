@@ -23,8 +23,8 @@ import gqylpy_exception as ge
 
 raise ge.AnError(...)
 ```
-`gqylpy_exception` 可以创建任何异常类。`AnError` 不是 `gqylpy_exception` 中内置的，它是在你的代码执行到 `ge.` 
-时创建的，魔化方法 `__getattr__` 的特性。你还可以使用魔法方法 `__getitem__` 获得它：
+`gqylpy_exception` 可以创建任意名称的异常类。`AnError` 不是 `gqylpy_exception` 中内置的，它是在你的代码执行到 `ge.` 
+时创建的，魔化方法 `__getattr__` 的特性。你还可以通过魔法方法 `__getitem__` 获得它：
 ```python
 e: ge.GqylpyError = ge['AnError'](...)
 ```
@@ -52,12 +52,12 @@ def func():
 def TryExcept(
         etype:          Union[type, Tuple[type, ...]],
         /, *,
-        ignore:         bool                                      = False,
-        output_raw_exc: bool                                      = False,
-        logger:         logging.Logger                            = None,
-        ereturn:        Any                                       = None,
-        ecallback:      Callable[[Exception, Callable, ...], Any] = None,
-        eexit:          bool                                      = False
+        ignore:         bool                                       = False,
+        output_raw_exc: bool                                       = False,
+        logger:         logging.Logger                             = None,
+        ereturn:        Any                                        = None,
+        ecallback:      Callable[[Exception, Callable, ...], None] = None,
+        eexit:          bool                                       = False
 ):
     ...
 ```
