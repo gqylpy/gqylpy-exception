@@ -1,18 +1,15 @@
 """
-─────────────────────────────────────────────────────────────────────────────────────────────────────
-─██████████████─██████████████───████████──████████─██████─────────██████████████─████████──████████─
-─██░░░░░░░░░░██─██░░░░░░░░░░██───██░░░░██──██░░░░██─██░░██─────────██░░░░░░░░░░██─██░░░░██──██░░░░██─
-─██░░██████████─██░░██████░░██───████░░██──██░░████─██░░██─────────██░░██████░░██─████░░██──██░░████─
-─██░░██─────────██░░██──██░░██─────██░░░░██░░░░██───██░░██─────────██░░██──██░░██───██░░░░██░░░░██───
-─██░░██─────────██░░██──██░░██─────████░░░░░░████───██░░██─────────██░░██████░░██───████░░░░░░████───
-─██░░██──██████─██░░██──██░░██───────████░░████─────██░░██─────────██░░░░░░░░░░██─────████░░████─────
-─██░░██──██░░██─██░░██──██░░██─────────██░░██───────██░░██─────────██░░██████████───────██░░██───────
-─██░░██──██░░██─██░░██──██░░██─────────██░░██───────██░░██─────────██░░██───────────────██░░██───────
-─██░░██████░░██─██░░██████░░████───────██░░██───────██░░██████████─██░░██───────────────██░░██───────
-─██░░░░░░░░░░██─██░░░░░░░░░░░░██───────██░░██───────██░░░░░░░░░░██─██░░██───────────────██░░██───────
-─██████████████─████████████████───────██████───────██████████████─██████───────────────██████───────
-─────────────────────────────────────────────────────────────────────────────────────────────────────
+Create the exception class while executing the `raise` statement, you no longer
+need to define an exception class in advance, Convenient and Fast.
 
+    >>> import gqylpy_exception as ge
+    >>> raise ge.AnError(...)
+
+    @version: 1.3
+    @author: 竹永康 <gqylpy@outlook.com>
+    @source: https://github.com/gqylpy/gqylpy-exception
+
+────────────────────────────────────────────────────────────────────────────────
 Copyright (c) 2022 GQYLPY <http://gqylpy.com>. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,9 +24,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-__version__ = 1, 2, 1
-__author__ = '竹永康 <gqylpy@outlook.com>'
-__source__ = 'https://github.com/gqylpy/gqylpy-exception'
 
 
 def __getattr__(ename: str) -> type:
@@ -48,30 +42,30 @@ __history__: dict
 
 class GqylpyError(Exception):
     """
-    All exception classes created with "gqylpy_exception" inherit from it, you
-    can use it to handle any exception created by "gqylpy_exception".
+    All exception classes created with `gqylpy_exception` inherit from it, you
+    can use it to handle any exception created by `gqylpy_exception`.
     """
 
 
 def TryExcept(
         etype:          'Union[type, Tuple[type, ...]]',
-        /, *,
+        *,
         ignore:         'bool'                                       = None,
         output_raw_exc: 'bool'                                       = None,
         logger:         'logging.Logger'                             = None,
         ereturn:        'Any'                                        = None,
         ecallback:      'Callable[[Exception, Callable, ...], None]' = None,
         eexit:          'bool'                                       = None
-):
+) -> 'Callable':
     """
-    "TryExcept" is a decorator, handle exception raised in function decorated.
+    `TryExcept` is a decorator, handle exception raised in function decorated.
 
     @param etype:          Which exceptions to handle.
     @param ignore:         If true, exception are processed silently without
                            output, default false.
     @param output_raw_exc: If true, output the raw exception information
                            directly, default false. Note priority lower than
-                           parameter "ignore".
+                           parameter `ignore`.
     @param logger:         By default, exception information is output to
                            terminal by `sys.stderr`. You can specify this
                            parameter, if you want to output exception
@@ -100,9 +94,9 @@ def Retry(
         ignore:         'bool'                          = None,
         output_raw_exc: 'bool'                          = None,
         logger:         'logging.Logger'                = None
-):
+) -> 'Callable':
     """
-    "Retry" is a decorator, when an exception is raised in function decorated,
+    `Retry` is a decorator, when an exception is raised in function decorated,
     attempt to re-execute the function decorated.
 
     @param etype:          Which exceptions to try.
@@ -113,9 +107,9 @@ def Retry(
     @param output_raw_exc: If true, output the raw exception information
                            directly,
                            default false. Note priority lower than
-                           parameter "ignore".
+                           parameter `ignore`.
     @param logger:         By default, exception information is output to
-                           terminal by "sys.stderr". You can specify this
+                           terminal by `sys.stderr`. You can specify this
                            parameter, if you want to output exception
                            information using your logger, it will call the
                            logger's `error` method.
@@ -133,16 +127,16 @@ def Retry(
 
 async def TryExceptAsync(
         etype:          'Union[type, Tuple[type, ...]]',
-        /, *,
+        *,
         ignore:         'bool'                                      = None,
         output_raw_exc: 'bool'                                      = None,
         logger:         'logging.Logger'                            = None,
         ereturn:        'Any'                                       = None,
         ecallback:      'Callable[[Exception, Callable, ...], Any]' = None,
         eexit:          'bool'                                      = None
-):
+) -> 'Callable':
     """
-    "TryExceptAsync" is a decorator, handle exception raised in asynchronous
+    `TryExceptAsync` is a decorator, handle exception raised in asynchronous
     function decorated.
 
     @param etype:          Which exceptions to handle.
@@ -150,7 +144,7 @@ async def TryExceptAsync(
                            output, default false.
     @param output_raw_exc: If true, output the raw exception information
                            directly, default false. Note priority lower than
-                           parameter "ignore".
+                           parameter `ignore`.
     @param logger:         By default, exception information is output to
                            terminal by `sys.stderr`. You can specify this
                            parameter, if you want to output exception
@@ -179,9 +173,9 @@ async def RetryAsync(
         ignore:         'bool'                          = None,
         output_raw_exc: 'bool'                          = None,
         logger:         'logging.Logger'                = None
-):
+) -> 'Callable':
     """
-    "RetryAsync" is a decorator, when an exception is raised in asynchronous
+    `RetryAsync` is a decorator, when an exception is raised in asynchronous
     function decorated, attempt to re-execute the asynchronous function
     decorated.
 
@@ -192,7 +186,7 @@ async def RetryAsync(
                            output, default false.
     @param output_raw_exc: If true, output the raw exception information
                            directly, default false. Note priority lower than
-                           parameter "ignore".
+                           parameter `ignore`.
     @param logger:         By default, exception information is output to
                            terminal by `sys.stderr`. You can specify this
                            parameter, if you want to output exception
@@ -211,6 +205,56 @@ async def RetryAsync(
 
 
 class _xe6_xad_x8c_xe7_x90_xaa_xe6_x80_xa1_xe7_x8e_xb2_xe8_x90_x8d_xe4_xba_x91:
+    """  QYYYQLLYYYYYYYQLYYQYYQQQYQQYQQQQQQQQQQQQQQQQQQQQQQYYYQQQQQQYL
+        YYYYQYLLQYLLYYQYYYYYYYQQYQYQYQQQQQQQQQQQQQQQQQQQQQQQYYYQQQQQQ
+        QYYYYLPQYLPLYYYLLYYYYYYYYQQQYQQQQQQQQQQQQQQQQQQQQQQQYYYYQQQQQP
+        QYYQLPLQYLLYYQPLLLYYYYYYQYYQYQQQQQQQQQQQQQQYQQQQQQQQYYQYQQQQQQP
+       QYYQYLLYYYLLYQYLLYYYYYYYYQYYQYQYYYQQQQQQQQQQYQQQQQQYQQYQYYQQQQQYP
+      LQYQYYYYQYYYYYQYYYYYYYYYYYYYYYQQYYYYYYYYYQQQQYQQQQQQYQQYQYYQQQQQQ P
+      QYQQYYYYQYYYQQQYYYYYYYYQYQYYYYQQYYYQYQYYQQQQYQQQQQQQYQQYQYYQQQQQQ P
+      QYQQYYYYQYYYQQQYYYYYYYYQYQYYYYYQYYYYQYYYQQQQYQQQQQQQYQQYQQYQQQQYYP
+      QYQYYYYYQYYYQQQ PYLLLYP PLYYYYYYQYYYYYYQQQQYYQQQQQQYQQYQQQYQQQQYQ
+      PQQYYYYYQYYQQYQQQQQQQQQQYP        PPLYQYQYQYQLQQQQQYQQYQQQYYQQQYY
+       QQYYYYYQQYQLYQQPQQQQQL QYL           PPYYLYYLQYQQYYQYQQQQYYQPQYL
+       YQYYYYQQQYQ  LYLQQQQQQYQQ           YQQQQQGQQQQQQYQYYQQQQYQPQYQ P
+      L QYYYYQQLYQ   Y YPYQQQQQ           LQQQQQL YQQQQYQQYQYQQYYQQYQP P
+        YYQYYQQ  Q    LQQQQQQY            YQYQQQQQQYYQYLQYQQYQQYYQYQL P
+     Y  LYQLQQPL Y     P  P                QLLQQQQQ Q  PQQQQYQQYYQQL P
+    P   PYQYQQQQPQ                         PQQQQQQY    QQYQYYQQYYQPP
+    L    QQQYQ YYYY              PQ           L  P    LPQYQYYQQLQ P
+    Y   PPQQYYL LYQL                                 PQLQYQQYQYQ  L
+    Y     QQYQPP PYQY        PQ                      Q  QQYQYQYL  L
+    Y     QQYYQ L  QYQP         PLLLLLYL           LQQ LQYYQQQP P L
+     L   PPLQYYQ Y  LQQQ                         LQYQ  QYYYQQ     P
+      L    Q  QYQ  Y  QQPYL                   PQYYYYPPQYYQQQP    L
+       L    L  PQQL   LYQ  PQP             QL PYYYPLQLYQ  QY P   Y
+         P   P    PQQP  QY  QLLQQP   LYYLQ   PQYPQQQP P  QY P   L
+                       PYQYYY           PQ  PQ      L   Q P    L
+              PQYLYYYPQ PLPL             L QY YQYYQYLYQQQ    P
+            PYLLLLLYYYQ P  L    P         PYL  PQYYLLLLLLLQ
+           LYPLLLLLLYYYY   Y  YQY     LLLPPY   LYYYLLLLLLLLY
+           YLLLYLLLLLLYYQ  Q              PQ  YYYLLLLLLLLLLYP
+          YLLLLLLLLLLLLLLYQQ              PYYQYYLLLLLLLLYYYLQ
+          QLLLLLLLLLLLLLLLLLYYQYP        YQYYLLLLLLLLLLLLLLLQ
+          YLLLLLLLLLLLLLLLLLLLYYYLLYYYLLLLLLLLLLLLLLLLLLLLLLYP
+         PLLLLLLLLLLLLLLLLLLLLLLLYLLLLLLLLLLLLLLLLLLLLLLLYLYLL
+         LLLLLLLLLLYYLLLLLLYLLLLLLLLLLLLLLLL GQYLPY LLLYLYLLLY
+         QLLLLYYLYLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLQYYYYLLQ
+         QLLLLLYYQYLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLQLYYLLLQ
+        LYLLYLLLQYYLLLLLLLLLLLLLLLLLLLLLLLLLLLLLYLLLLLQYYYYYLYQ
+        YLLLYYLLYQYLLLLLLLLLLLLLLLLLLLLLLLLLLLLYLLLLLYYYYQLLLLY
+        QLLLYYYYYQLLLLLLLLLLLLLLYLLLLLLLLLLLLLLLLLLLLYYYLQLLPLLQ
+        YLYLLQYYYQLLLLLLLLLLLLLLLLLLLLLLLLLLLLYYLLLLLYYQYYLLLLLQ
+       LYLLLLLYYYQLLYLLLLLLLLLLLLYLYLLYYLLLLYLLLLLLLYYYQQLLLLLLLY
+       YLLLLLLYYYQLLYLLLLLLLYLYLLLLLLLLLLLLLLLLLLLLYYYYQQLYLLLLLQ
+       QLLLYLLLQYQLQLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLYYYQYYLLLLLLLY
+       QLLLLLLLLQQYQLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLQYYQYYLLLLLLLQ
+       QLLLLLLLLLQQYLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLYYYYLLLLLLLLLYL
+       QLLLLYLYYLYQLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLQYYYLLLLLLLLLQ
+       YLLLLLLLYYLQLLLLLLLLLLLLLLLLLLLLLLLLLYLLLLLLLLYQYYLLLLLLLLLQ
+       QLLLLLYLYYYYLLLLLPLLLLLLLYLYLLLLLLLLLLLLLLLLLLLQYYLLLLLLLLYP
+       YYLYYLLYYYQLLLLLLLLYLLLLLLLLLLLLLLLLLLLLLLYLYLLYQYYLLLLLLYL
+        QLLLLLLYQYLLLLLLLLLLLLLLLLLLLLLYYLYLLLLLLLLLLLYQQQQQQQLYL  """
     import sys
 
     __import__(f'{__name__}.g {__name__[7:]}')
