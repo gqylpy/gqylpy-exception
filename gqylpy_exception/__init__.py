@@ -5,7 +5,7 @@ need to define an exception class in advance, Convenient and Fast.
     >>> import gqylpy_exception as ge
     >>> raise ge.AnError(...)
 
-    @version: 1.3
+    @version: 1.3.1
     @author: 竹永康 <gqylpy@outlook.com>
     @source: https://github.com/gqylpy/gqylpy-exception
 
@@ -45,6 +45,7 @@ class GqylpyError(Exception):
     All exception classes created with `gqylpy_exception` inherit from it, you
     can use it to handle any exception created by `gqylpy_exception`.
     """
+    msg: 'Any'
 
 
 def TryExcept(
@@ -274,4 +275,4 @@ class _xe6_xad_x8c_xe7_x90_xaa_xe6_x80_xa1_xe7_x8e_xb2_xe8_x90_x8d_xe4_xba_x91:
 
 
 import logging
-from typing import Any, Tuple, Union, Callable
+from typing import Union, Tuple, Callable, Any

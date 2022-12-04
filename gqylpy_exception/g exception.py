@@ -61,8 +61,17 @@ class GqylpyException:
     class GqylpyError(Exception):
         __module__ = 'builtins'
 
+        @property
+        def msg(self):
+            args_length: int = len(self.args)
+            if args_length == 0:
+                return ''
+            if args_length == 1:
+                return self.args[0]
+            return self.args
 
-# Compatible with object serialization, against `GqylpyException.GqylpyError`.
+
+# Compatible with object serialization, for `GqylpyException.GqylpyError`.
 builtins.GqylpyException = GqylpyException
 
 
@@ -110,7 +119,8 @@ class TryExcept:
                 einfo: str = f'{self.__class__.__name__}Error: {ee}'
 
             if not local_instance:
-                einfo: str = f'[try:{kw["count"]}/{self.count}] {einfo}'
+                einfo: str = f'[try:{kw["count"]}/{self.count}:{self.cycle}] ' \
+                             f'{einfo}'
 
             if self.logger:
                 if not(
