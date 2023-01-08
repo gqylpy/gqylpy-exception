@@ -9,9 +9,6 @@ with open(g.__file__, encoding='utf8') as f:
     author, email = f.readline().split(maxsplit=1)[-1].rstrip().split()
     source = f.readline().split()[-1]
 
-with open('README.md', encoding='utf8') as f:
-    long_description = f.read()
-
 setuptools.setup(
     name=g.__name__,
     version=version,
@@ -21,7 +18,7 @@ setuptools.setup(
     url='http://gqylpy.com',
     project_urls={'Source': source},
     description='在执行 raise 语句的同时创建异常类，无需事先定义异常类，方便快捷。',
-    long_description=long_description,
+    long_description=open('README.md', encoding='utf8').read(),
     long_description_content_type='text/markdown',
     packages=[g.__name__],
     python_requires='>=3.6, <4',

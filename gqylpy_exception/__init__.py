@@ -5,12 +5,12 @@ need to define an exception class in advance, Convenient and Fast.
     >>> import gqylpy_exception as ge
     >>> raise ge.AnError(...)
 
-    @version: 1.3.1
+    @version: 1.3.2
     @author: 竹永康 <gqylpy@outlook.com>
     @source: https://github.com/gqylpy/gqylpy-exception
 
 ────────────────────────────────────────────────────────────────────────────────
-Copyright (c) 2022 GQYLPY <http://gqylpy.com>. All rights reserved.
+Copyright (c) 2022, 2023 GQYLPY <http://gqylpy.com>. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -113,7 +113,7 @@ def Retry(
                            terminal by `sys.stderr`. You can specify this
                            parameter, if you want to output exception
                            information using your logger, it will call the
-                           logger's `error` method.
+                           logger's `warning ` method.
 
         @Retry(count=3, cycle=1)
         def func():
@@ -192,7 +192,7 @@ async def RetryAsync(
                            terminal by `sys.stderr`. You can specify this
                            parameter, if you want to output exception
                            information using your logger, it will call the
-                           logger's `error` method.
+                           logger's `warning ` method.
 
         @RetryAsync(count=3, cycle=1)
         async def func():
