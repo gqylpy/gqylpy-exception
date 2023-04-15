@@ -50,25 +50,25 @@ def func():
 默认的处理流程是将异常简要信息输出到终端。当然，也可以输出到文件或做其它处理，通过参数控制：
 ```python
 def TryExcept(
-        etype:          Union[type, Tuple[type, ...]],
-        /, *,
-        ignore:         bool                                       = False,
-        output_raw_exc: bool                                       = False,
-        logger:         logging.Logger                             = None,
-        ereturn:        Any                                        = None,
-        ecallback:      Callable[[Exception, Callable, ...], None] = None,
-        eexit:          bool                                       = False
+        etype:      Union[ExceptionTypes],
+        *,
+        silent_exc: Optional[bool]              = None,
+        raw_exc:    Optional[bool]              = None,
+        logger:     Optional[ExceptionLogger]   = None,
+        ereturn:    Optional[Any]               = None,
+        ecallback:  Optional[ExceptionCallback] = None,
+        eexit:      Optional[bool]              = None
 ):
     ...
 ```
 __参数 `etype`__<br>
 要处理哪种异常，使用元祖传入多个。
 
-__参数 `ingore`__<br>
+__参数 `silent_exc`__<br>
 设为 `True` 将静默处理异常，没有任何输出。
 
-__参数 `output_raw_exc`__<br>
-设为 `True` 将输出完整的异常信息，注意其优先级低于 `ignore`。 
+__参数 `raw_exc`__<br>
+设为 `True` 将输出完整的异常信息，注意其优先级低于 `silent_exc`。 
 
 __参数 `logger`__<br>
 接收一个日志记录器对象，`TryExcept` 希望使用日志记录器输出异常信息，它调用日志记录器的 `error` 方法。<br>
@@ -98,13 +98,13 @@ def func():
 像上面这样调用 `Retry(count=3, cycle=1)` 表示最大执行3次，每次间隔1秒。完整的参数如下：
 ```python
 def Retry(
-        etype:          Union[type, Tuple[type, ...]] = Exception,
+        etype:      Optional[ExceptionTypes]    = None,
         *,
-        count:          int                           = inf,
-        cycle:          Union[int, float]             = 0,
-        ignore:         bool                          = False,
-        output_raw_exc: bool                          = False,
-        logger:         logging.Logger                = None
+        count:      Optional[int]               = inf,
+        cycle:      Optional[Union[int, float]] = 0,
+        silent_exc: Optional[bool]              = None,
+        raw_exc:    Optional[bool]              = None,
+        logger:     Optional[ExceptionLogger]   = None
 ):
     ...
 ```
