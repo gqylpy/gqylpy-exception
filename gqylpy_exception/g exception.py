@@ -55,7 +55,7 @@ class GqylpyException:
             if ename[-5:] != 'Error':
                 warnings.warn(
                     f'strange exception class "{ename}", exception class name '
-                    'should end with "Error".', UserWarning
+                    'should end with "Error".', UserWarning, stacklevel=2
                 )
             eclass = self.__history__[ename] = type(
                 ename, (self.GqylpyError,), {'__module__': 'builtins'}

@@ -5,7 +5,7 @@ need to define an exception class in advance, Convenient and Fast.
     >>> import gqylpy_exception as ge
     >>> raise ge.AnError(...)
 
-    @version: 2.0
+    @version: 2.0.1
     @author: 竹永康 <gqylpy@outlook.com>
     @source: https://github.com/gqylpy/gqylpy-exception
 
@@ -57,7 +57,7 @@ class GqylpyError(Exception):
 
 
 def TryExcept(
-        etype:      Union[ExceptionTypes],
+        etype:      ExceptionTypes,
         *,
         silent_exc: Optional[bool]              = None,
         raw_exc:    Optional[bool]              = None,
@@ -67,8 +67,8 @@ def TryExcept(
         eexit:      Optional[bool]              = None
 ) -> Callable:
     """
-    `TryExcept` is a decorator, handles exceptions raised by the function it
-    decorates.
+    `TryExcept` is a decorator (is an additional function of `gqylpy_exception`
+    ), handles exceptions raised by the function it decorates.
 
         >>> @TryExcept(ValueError)
         >>> def func():
@@ -104,9 +104,9 @@ def Retry(
         logger:     Optional[ExceptionLogger]   = None
 ) -> Callable:
     """
-    `Retry` is a decorator, retries exceptions raised by the function it
-    decorates. When an exception is raised in function decorated, try to
-    re-execute the function decorated.
+    `Retry` is a decorator (is an additional function of `gqylpy_exception`),
+    retries exceptions raised by the function it decorates. When an exception is
+    raised in function decorated, try to re-execute the function decorated.
 
         >>> @Retry(count=3, cycle=1)
         >>> def func():
@@ -143,8 +143,9 @@ async def TryExceptAsync(
         ecallback:  Optional[ExceptionCallback] = None,
         eexit:      Optional[bool]              = None
 ) -> Callable:
-    """`TryExceptAsync` is a decorator, handles exceptions raised by the
-    asynchronous function it decorates."""
+    """`TryExceptAsync` is a decorator (is an additional function of
+    `gqylpy_exception`), handles exceptions raised by the asynchronous function
+    it decorates."""
     warnings.warn(
         f'will be deprecated soon, replaced to {TryExcept}.', DeprecationWarning
     )
@@ -168,8 +169,9 @@ async def RetryAsync(
         raw_exc:    Optional[bool]              = None,
         logger:     Optional[ExceptionLogger]   = None
 ) -> Callable:
-    """`RetryAsync` is a decorator, retries exceptions raised by the
-    asynchronous function it decorates."""
+    """`RetryAsync` is a decorator (is an additional function of
+    `gqylpy_exception`), retries exceptions raised by the asynchronous function
+    it decorates."""
     warnings.warn(
         f'will be deprecated soon, replaced to {Retry}.', DeprecationWarning
     )
