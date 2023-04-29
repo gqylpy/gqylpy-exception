@@ -5,7 +5,7 @@ need to define an exception class in advance, Convenient and Fast.
     >>> import gqylpy_exception as ge
     >>> raise ge.AnError(...)
 
-    @version: 2.0.1
+    @version: 2.0.2
     @author: 竹永康 <gqylpy@outlook.com>
     @source: https://github.com/gqylpy/gqylpy-exception
 
@@ -188,15 +188,15 @@ async def RetryAsync(
 class _xe6_xad_x8c_xe7_x90_xaa_xe6_x80_xa1_xe7_x8e_xb2_xe8_x90_x8d_xe4_xba_x91:
     import sys
 
+    gpack = globals()
     gpath = f'{__name__}.g {__name__[7:]}'
-    __import__(gpath)
+    gcode = __import__(gpath, fromlist=...)
 
-    gcode = globals()[f'g {__name__[7:]}']
     ge = gcode.GqylpyException()
 
-    for gname in globals():
+    for gname in gpack:
         if gname[0] == '_':
-            setattr(ge, gname, globals()[gname])
+            setattr(ge, gname, gpack[gname])
         else:
             try:
                 gfunc = getattr(gcode, gname)
