@@ -41,16 +41,16 @@ class GqylpyException:
         try:
             eclass = self.__history__[ename]
         except KeyError:
+            if ename[:2] == ename[-2:] == '__' and \
+                    ename[2] != '_' and ename[-3] != '_':
+                # Some special modules may attempt to call non-built-in magic
+                # method, such as `copy`, `pickle`. Compatible for this purpose.
+                raise AttributeError(
+                    f'"{__package__}" has no attribute "{ename}".'
+                ) from None
             if hasattr(builtins, ename):
                 raise self.ExceptionClassIsBuiltinsError(
                     f'exception class "{ename}" is builtins.'
-                ) from None
-            # Some special modules may attempt to call non-built-in magic
-            # method, such as `copy`, `pickle`. Compatible for this purpose.
-            if ename[:2] == ename[-2:] == '__' and \
-                    ename[2] != '_' and ename[-3] != '_':
-                raise AttributeError(
-                    f'"{__package__}" has no attribute "{ename}".'
                 ) from None
             if ename[-5:] != 'Error':
                 warnings.warn(

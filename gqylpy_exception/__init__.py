@@ -5,7 +5,7 @@ need to define an exception class in advance, Convenient and Fast.
     >>> import gqylpy_exception as ge
     >>> raise ge.AnError(...)
 
-    @version: 2.0.2
+    @version: 2.0.3
     @author: 竹永康 <gqylpy@outlook.com>
     @source: https://github.com/gqylpy/gqylpy-exception
 
@@ -195,9 +195,7 @@ class _xe6_xad_x8c_xe7_x90_xaa_xe6_x80_xa1_xe7_x8e_xb2_xe8_x90_x8d_xe4_xba_x91:
     ge = gcode.GqylpyException()
 
     for gname in gpack:
-        if gname[0] == '_':
-            setattr(ge, gname, gpack[gname])
-        else:
+        if gname[0] != '_':
             try:
                 gfunc = getattr(gcode, gname)
                 assert gfunc.__module__ in (gpath, __package__)
@@ -205,6 +203,14 @@ class _xe6_xad_x8c_xe7_x90_xaa_xe6_x80_xa1_xe7_x8e_xb2_xe8_x90_x8d_xe4_xba_x91:
                 continue
             gfunc.__module__ = __package__
             setattr(ge, gname, gfunc)
+        elif not hasattr(ge, gname):
+            setattr(ge.__class__, gname, gpack[gname])
 
-    ge.__module__ = __package__
-    sys.modules[__name__] = ge.GqylpyException = ge
+    setattr(ge, __package__, ge.__class__)
+
+    ge.__doc__                = __doc__
+    ge.__name__               = __package__
+    ge.__class__.__qualname__ = __package__
+    ge.__class__.__module__   = __package__
+
+    sys.modules[__name__] = ge
