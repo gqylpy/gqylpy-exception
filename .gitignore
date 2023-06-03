@@ -107,4 +107,4 @@ ENV/
 *.nc
 conda-requirements.txt
 
-self_test.py
+tests/

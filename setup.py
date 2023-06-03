@@ -26,9 +26,9 @@ setuptools.setup(
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
+        'License :: OSI Approved :: Apache Software License',
         'Natural Language :: Chinese (Simplified)',
         'Natural Language :: English',
-        'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Software Development :: Bug Tracking',

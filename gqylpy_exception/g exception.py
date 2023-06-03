@@ -31,8 +31,6 @@ ExceptionTypes    = Union[Type[Exception], Tuple[Type[Exception], ...]]
 ExceptionLogger   = Union[logging.Logger, 'gqylpy_log']
 ExceptionCallback = Callable[[Exception, Function, '...'], None]
 
-warnings.filterwarnings('once', category=DeprecationWarning)
-
 
 class GqylpyException:
     __history__ = {}
@@ -55,7 +53,7 @@ class GqylpyException:
             if ename[-5:] != 'Error':
                 warnings.warn(
                     f'strange exception class "{ename}", exception class name '
-                    'should end with "Error".', UserWarning, stacklevel=2
+                    'should end with "Error".', stacklevel=2
                 )
             eclass = self.__history__[ename] = type(
                 ename, (self.GqylpyError,), {'__module__': 'builtins'}
@@ -75,8 +73,11 @@ class GqylpyException:
             return self.args[0] if len(self.args) == 1 else \
                 self.args if self.args else None
 
+
 # Compatible with object serialization, for `GqylpyException.GqylpyError`.
 builtins.GqylpyException = GqylpyException
+
+ParameterError = GqylpyException().ParameterError
 
 
 def stderr(einfo: str) -> None:
@@ -104,17 +105,6 @@ def get_logger(logger: logging.Logger) -> Callable[[str], None]:
 
 
 class TryExcept:
-
-    def __new__(cls, *a, **kw):
-        if 'ignore' in kw:
-            warnings.warn(DeprecationWarning(
-                'parameter "ignore" deprecated, replaced to "silent_exc".'
-            ), stacklevel=2)
-        if 'output_raw_exc' in kw:
-            warnings.warn(DeprecationWarning(
-                'parameter "output_raw_exc" deprecated, replaced to "raw_exc".'
-            ), stacklevel=2)
-        return object.__new__(cls)
 
     def __init__(
             self,
@@ -193,19 +183,28 @@ class TryExcept:
         if self.raw_exc:
             return einfo
 
-        filepath: str = func.__globals__['__file__']
-        funcpath: str = f'{func.__module__}.{func.__qualname__}'
-
-        for line in reversed(einfo.split('\n')[1:-3]):
-            if filepath in line:
-                eline: str = re.search(
-                    r'line \d+', line
-                ).group().replace(' ', '')
-                break
+        if isinstance(func, type):
+            filepath: str = sys.modules[func.__module__].__file__
         else:
-            eline: str = 'lineX'
+            try:
+                filepath: str = func.__globals__['__file__']
+            except AttributeError:
+                filepath = None
 
-        return f'[{funcpath}.{eline}.{e.__class__.__name__}] {e}'
+        if filepath is None:
+            eline = 'lineX'
+        else:
+            for line in reversed(einfo.split('\n')[1:-3]):
+                if filepath in line:
+                    eline: str = re.search(
+                        r'line \d+', line
+                    ).group().replace(' ', '')
+                    break
+            else:
+                eline = 'lineX'
+
+        return f'[{func.__module__}.{func.__qualname__}.{eline}.' \
+               f'{e.__class__.__name__}] {e}'
 
 
 class Retry(TryExcept):
@@ -281,5 +280,3 @@ class Retry(TryExcept):
 
 
 TryExceptAsync, RetryAsync = TryExcept, Retry
-
-ParameterError = GqylpyException().ParameterError
