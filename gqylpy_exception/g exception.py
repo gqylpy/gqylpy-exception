@@ -23,7 +23,7 @@ import builtins
 import functools
 import traceback
 
-from typing import TypeVar, Type, Optional, Union, Tuple, Callable, Any
+from typing import TypeVar, Type, Optional, Union, Dict, Tuple, Callable, Any
 
 Function = Closure = TypeVar('Function', bound=Callable)
 
@@ -32,52 +32,36 @@ ExceptionLogger   = Union[logging.Logger, 'gqylpy_log']
 ExceptionCallback = Callable[[Exception, Function, '...'], None]
 
 
-class GqylpyException:
-    __history__ = {}
+class GqylpyError(Exception):
+    __module__ = Exception.__module__
 
-    def __getattr__(self, ename: str) -> Type['GqylpyError']:
-        try:
-            eclass = self.__history__[ename]
-        except KeyError:
-            if ename[:2] == ename[-2:] == '__' and \
-                    ename[2] != '_' and ename[-3] != '_':
-                # Some special modules may attempt to call non-built-in magic
-                # method, such as `copy`, `pickle`. Compatible for this purpose.
-                raise AttributeError(
-                    f'"{__package__}" has no attribute "{ename}".'
-                ) from None
-            if hasattr(builtins, ename):
-                raise self.ExceptionClassIsBuiltinsError(
-                    f'exception class "{ename}" is builtins.'
-                ) from None
-            if ename[-5:] != 'Error':
-                warnings.warn(
-                    f'strange exception class "{ename}", exception class name '
-                    'should end with "Error".', stacklevel=2
-                )
-            eclass = self.__history__[ename] = type(
-                ename, (self.GqylpyError,), {'__module__': 'builtins'}
-            )
-            # Compatible with object serialization.
-            setattr(builtins, ename, eclass)
+    def __init_subclass__(cls) -> None:
+        cls.__module__ = GqylpyError.__module__
+        setattr(builtins, cls.__name__, cls)
+
+    msg: Any = Exception.args
+
+
+__history__: Dict[str, Type[GqylpyError]] = {}
+
+
+def __getattr__(ename: str) -> Union[Type[BaseException], Type[GqylpyError]]:
+    if ename[:2] == ename[-2:] == '__' and ename[2] != '_' and ename[-3] != '_':
+        # Some special modules may attempt to call non-built-in magic method,
+        # such as `copy`, `pickle`. Compatible for this purpose.
+        raise AttributeError(f'"{__package__}" has no attribute "{ename}".')
+
+    eclass = getattr(builtins, ename, None)
+    if isinstance(eclass, type) and issubclass(eclass, BaseException):
         return eclass
 
-    def __getitem__(self, ename: str) -> Type['GqylpyError']:
-        return getattr(self, ename)
+    if ename[-5:] != 'Error':
+        warnings.warn(
+            f'strange exception class "{ename}", exception class name should '
+            'end with "Error".', stacklevel=2
+        )
 
-    class GqylpyError(Exception):
-        __module__ = 'builtins'
-
-        @property
-        def msg(self) -> Any:
-            return self.args[0] if len(self.args) == 1 else \
-                self.args if self.args else None
-
-
-# Compatible with object serialization, for `GqylpyException.GqylpyError`.
-builtins.GqylpyException = GqylpyException
-
-ParameterError = GqylpyException().ParameterError
+    return __history__.setdefault(ename, type(ename, (GqylpyError,), {}))
 
 
 def stderr(einfo: str) -> None:
@@ -93,7 +77,7 @@ def get_logger(logger: logging.Logger) -> Callable[[str], None]:
             isinstance(logger, logging.Logger) or
             getattr(logger, '__package__', None) == 'gqylpy_log'
     ):
-        raise ParameterError(
+        raise ValueError(
             'parameter "logger" must be an instance of "logging.Logger", '
             f'not "{logger.__class__.__name__}".'
         )
@@ -115,9 +99,7 @@ class TryExcept:
             logger:     Optional[ExceptionLogger]   = None,
             ereturn:    Optional[Any]               = None,
             ecallback:  Optional[ExceptionCallback] = None,
-            eexit:      bool                        = False,
-            ignore         = None,
-            output_raw_exc = None
+            eexit:      bool                        = False
     ):
         self.etype      = etype
         self.silent_exc = silent_exc
@@ -217,13 +199,11 @@ class Retry(TryExcept):
             cycle:      int                       = 0,
             silent_exc: bool                      = False,
             raw_exc:    bool                      = False,
-            logger:     Optional[ExceptionLogger] = None,
-            ignore         = None,
-            output_raw_exc = None
+            logger:     Optional[ExceptionLogger] = None
     ):
         if not (count.__class__ is int and count >= 0):
             if not (count.__class__ is str and count.isdigit()):
-                raise ParameterError(
+                raise ValueError(
                     'parameter "count" must be a positive integer or 0, '
                     f'not "{count}".'
                 )
@@ -233,12 +213,12 @@ class Retry(TryExcept):
             try:
                 cycle = float(cycle)
             except (TypeError, ValueError):
-                raise ParameterError(
+                raise ValueError(
                     'parameter "count" must be a positive integer or 0, '
                     f'not "{count}".'
                 ) from None
         if cycle < 0:
-            raise ParameterError(
+            raise ValueError(
                 'parameter "count" must be a positive integer or 0, '
                 f'not "{count}".'
             )
@@ -277,6 +257,3 @@ class Retry(TryExcept):
                     raise e
 
             await asyncio.sleep(self.cycle)
-
-
-TryExceptAsync, RetryAsync = TryExcept, Retry

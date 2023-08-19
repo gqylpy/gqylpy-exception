@@ -5,7 +5,7 @@ need to define an exception class in advance, Convenient and Fast.
     >>> import gqylpy_exception as ge
     >>> raise ge.AnError(...)
 
-    @version: 2.0.4
+    @version: 3.0alpha1
     @author: 竹永康 <gqylpy@outlook.com>
     @source: https://github.com/gqylpy/gqylpy-exception
 
@@ -34,24 +34,26 @@ ExceptionLogger   = Union[logging.Logger, 'gqylpy_log']
 ExceptionCallback = Callable[[Exception, Callable, '...'], None]
 
 
-def __getattr__(ename: str) -> Type['GqylpyError']:
-    return __history__.setdefault(ename, type(ename, (GqylpyError,), {}))
-
-
-def __getitem__(ename: str) -> Type['GqylpyError']:
-    return __getattr__(ename)
-
-
-__history__: Dict[str, Type['GqylpyError']]
-# All the exception classes you've ever created are here.
-
-
 class GqylpyError(Exception):
     """
     All exception classes created with `gqylpy_exception` inherit from it, you
     can use it to handle any exception created by `gqylpy_exception`.
     """
-    msg: Any
+    msg: Any = Exception.args
+
+
+__history__: Dict[str, Type[GqylpyError]]
+# All the exception classes you've ever created are here.
+
+
+def __getattr__(ename: str) -> Type[GqylpyError]:
+    """
+    Create an exception type called `ename` and return it.
+
+    If the exception is built-in to Python or already exists in `__history__`,
+    it is returned directly, rather than being created repeatedly.
+    """
+    return __history__.setdefault(ename, type(ename, (GqylpyError,), {}))
 
 
 def TryExcept(
@@ -188,30 +190,20 @@ class _xe6_xad_x8c_xe7_x90_xaa_xe6_x80_xa1_xe7_x8e_xb2_xe8_x90_x8d_xe4_xba_x91:
 
     if sys.platform != 'linux' or \
             logging.__file__[:-20] == __file__[:-len(__name__) - 27]:
+
         gpack = globals()
         gpath = f'{__name__}.g {__name__[7:]}'
         gcode = __import__(gpath, fromlist=...)
 
-        ge = gcode.GqylpyException()
+        gpack['GqylpyError'] = gcode.GqylpyError
+        gpack['__history__'] = gcode.__history__
 
-        for gname in gpack:
-            if gname[0] != '_':
-                try:
-                    gfunc = getattr(gcode, gname)
-                    assert gfunc.__module__ in (gpath, __package__)
-                except (AttributeError, AssertionError):
-                    continue
+        for gname in gcode.__dir__():
+            gfunc = getattr(gcode, gname)
+            if gname in gpack and getattr(gfunc, '__module__', None) == gpath:
                 gfunc.__module__ = __package__
-                setattr(ge, gname, gfunc)
-            elif not hasattr(ge, gname):
-                setattr(ge.__class__, gname, gpack[gname])
+                gfunc.__doc__ = gpack[gname].__doc__
+                gpack[gname] = gfunc
 
-        setattr(ge, __package__, ge.__class__)
-
-        ge.__doc__  = __doc__
-        ge.__name__ = __package__
-
-        ge.__class__.__qualname__ = __package__
-        ge.__class__.__module__   = __package__
-
-        sys.modules[__name__] = ge
+        gpack['TryExceptAsync'] = gpack['TryExcept']
+        gpack['RetryAsync']     = gpack['Retry']
