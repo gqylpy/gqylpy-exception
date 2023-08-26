@@ -23,7 +23,9 @@ import builtins
 import functools
 import traceback
 
-from typing import TypeVar, Type, Optional, Union, Dict, Tuple, Callable, Any
+from copy import copy, deepcopy
+
+from typing import TypeVar, Type, Optional, Union, Tuple, Callable, Any
 
 Function = Closure = TypeVar('Function', bound=Callable)
 
@@ -42,10 +44,84 @@ class GqylpyError(Exception):
     msg: Any = Exception.args
 
 
-__history__: Dict[str, Type[GqylpyError]] = {}
+builtins.GqylpyError = GqylpyError
 
 
-def __getattr__(ename: str) -> Union[Type[BaseException], Type[GqylpyError]]:
+class MasqueradeClass(type):
+    """
+    Masquerade one class as another (default masquerade as first parent class).
+    Warning, masquerade the class can cause unexpected problems, use caution.
+    """
+    __module__   = type.__module__
+
+    __qualname__ = type.__qualname__
+    # Warning, masquerade (modify) this attribute will cannot create the
+    # portable serialized representation. In practice, however, this metaclass
+    # often does not need to be serialized, so we try to ignore it.
+
+    def __new__(mcs, __name__: str, __bases__: tuple, __dict__: dict):
+        __masquerade_class__: Type[object] = __dict__.setdefault(
+            '__masquerade_class__', __bases__[0] if __bases__ else object
+        )
+
+        if not isinstance(__masquerade_class__, type):
+            raise TypeError('"__masquerade_class__" is not a class.')
+
+        cls = type.__new__(
+            mcs, __masquerade_class__.__name__, __bases__, __dict__
+        )
+
+        if cls.__module__ != __masquerade_class__.__module__:
+            setattr(sys.modules[__masquerade_class__.__module__], __name__, cls)
+
+        cls.__real_name__        = __name__
+        cls.__real_module__      = __package__
+        cls.__masquerade_class__ = __masquerade_class__
+        cls.__module__           = __masquerade_class__.__module__
+
+        # cls.__qualname__ = __masquerade_class__.__qualname__
+        # Masquerade (modify) this attribute will cannot create the portable
+        # serialized representation. We have not yet found an effective
+        # solution, and we will continue to follow up.
+
+        return cls
+
+    def __hash__(cls) -> int:
+        if sys._getframe(1).f_code in (deepcopy.__code__, copy.__code__):
+            return type.__hash__(cls)
+        return hash(cls.__masquerade_class__)
+
+    def __eq__(cls, o) -> bool:
+        return True if o is cls.__masquerade_class__ else type.__eq__(cls, o)
+
+
+MasqueradeClass.__name__ = type.__name__
+builtins.MasqueradeClass = MasqueradeClass
+
+
+class __history__(dict, metaclass=type('SingletonMode', (MasqueradeClass,), {
+    '__new__': lambda *a: MasqueradeClass.__new__(*a)()
+})):
+
+    def __setitem__(self, key: str, value: Type[GqylpyError], /) -> None:
+        self.__delitem__(depth=2)
+        dict.__setitem__(self, key, value)
+
+    def __delitem__(self, *a, depth: int = 1) -> None:
+        if sys._getframe(depth).f_code is not __getattr__.__code__:
+            raise __getattr__('ReadOnlyError')('this dictionary is read-only.')
+
+    def __reduce_ex__(self, protocol: int) -> ...:
+        return self.__class__, (dict(self),)
+
+    def copy(self) -> '__history__.__class__':
+        return copy(self)
+
+
+def __getattr__(ename: str, /) -> Union[Type[BaseException], Type[GqylpyError]]:
+    if ename in __history__:
+        return __history__[ename]
+
     if ename[:2] == ename[-2:] == '__' and ename[2] != '_' and ename[-3] != '_':
         # Some special modules may attempt to call non-built-in magic method,
         # such as `copy`, `pickle`. Compatible for this purpose.
@@ -61,7 +137,8 @@ def __getattr__(ename: str) -> Union[Type[BaseException], Type[GqylpyError]]:
             'end with "Error".', stacklevel=2
         )
 
-    return __history__.setdefault(ename, type(ename, (GqylpyError,), {}))
+    eclass = __history__[ename] = type(ename, (GqylpyError,), {})
+    return eclass
 
 
 def stderr(einfo: str) -> None:
@@ -93,7 +170,7 @@ class TryExcept:
     def __init__(
             self,
             etype:      ExceptionTypes,
-            *,
+            /, *,
             silent_exc: bool                        = False,
             raw_exc:    bool                        = False,
             logger:     Optional[ExceptionLogger]   = None,
@@ -194,7 +271,7 @@ class Retry(TryExcept):
     def __init__(
             self,
             etype:      ExceptionTypes            = Exception,
-            *,
+            /, *,
             count:      int                       = 0,
             cycle:      int                       = 0,
             silent_exc: bool                      = False,
@@ -203,7 +280,7 @@ class Retry(TryExcept):
     ):
         if not (count.__class__ is int and count >= 0):
             if not (count.__class__ is str and count.isdigit()):
-                raise ValueError(
+                raise __getattr__('ParameterError')(
                     'parameter "count" must be a positive integer or 0, '
                     f'not "{count}".'
                 )
@@ -213,14 +290,13 @@ class Retry(TryExcept):
             try:
                 cycle = float(cycle)
             except (TypeError, ValueError):
-                raise ValueError(
-                    'parameter "count" must be a positive integer or 0, '
-                    f'not "{count}".'
+                raise __getattr__('ParameterError')(
+                    'parameter "cycle" type must be an int or float, '
+                    f'not "{cycle.__class__.__name__}".'
                 ) from None
         if cycle < 0:
-            raise ValueError(
-                'parameter "count" must be a positive integer or 0, '
-                f'not "{count}".'
+            raise __getattr__('ParameterError')(
+                f'parameter "cycle" must be greater than 0, not {cycle}.'
             )
 
         self.count = count or 'N'

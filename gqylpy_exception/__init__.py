@@ -5,7 +5,7 @@ need to define an exception class in advance, Convenient and Fast.
     >>> import gqylpy_exception as ge
     >>> raise ge.AnError(...)
 
-    @version: 3.0alpha1
+    @version: 3.0alpha2
     @author: 竹永康 <gqylpy@outlook.com>
     @source: https://github.com/gqylpy/gqylpy-exception
 
@@ -25,7 +25,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import logging
-import warnings
 
 from typing import Type, Optional, Union, Tuple, Dict, Callable, Any
 
@@ -44,21 +43,26 @@ class GqylpyError(Exception):
 
 __history__: Dict[str, Type[GqylpyError]]
 # All the exception classes you've ever created are here.
+# This dictionary is read-only.
 
 
-def __getattr__(ename: str) -> Type[GqylpyError]:
+def __getattr__(ename: str, /) -> Type[GqylpyError]:
     """
     Create an exception type called `ename` and return it.
 
-    If the exception is built-in to Python or already exists in `__history__`,
-    it is returned directly, rather than being created repeatedly.
+    The created exception type will be stored to the dictionary `__history__`,
+    and when you create an exception type with the same name again, directly get
+    the value from this dictionary, rather than being created repeatedly.
+
+    For Python built-in exception types, returned directly, are not repeatedly
+    creation, and not stored to dictionary `__history__`.
     """
     return __history__.setdefault(ename, type(ename, (GqylpyError,), {}))
 
 
 def TryExcept(
         etype:      ExceptionTypes,
-        *,
+        /, *,
         silent_exc: Optional[bool]              = None,
         raw_exc:    Optional[bool]              = None,
         logger:     Optional[ExceptionLogger]   = None,
@@ -96,7 +100,7 @@ def TryExcept(
 
 def Retry(
         etype:      Optional[ExceptionTypes]    = None,
-        *,
+        /, *,
         count:      Optional[int]               = None,
         cycle:      Optional[Union[int, float]] = None,
         silent_exc: Optional[bool]              = None,
@@ -133,41 +137,22 @@ def Retry(
     """
 
 
-async def TryExceptAsync(
-        etype:      Union[ExceptionTypes],
-        *,
-        silent_exc: Optional[bool]              = None,
-        raw_exc:    Optional[bool]              = None,
-        logger:     Optional[ExceptionLogger]   = None,
-        ereturn:    Optional[Any]               = None,
-        ecallback:  Optional[ExceptionCallback] = None,
-        eexit:      Optional[bool]              = None
-) -> Callable:
+async def TryExceptAsync(etype: ExceptionTypes, /, **kw) -> Callable:
     """`TryExceptAsync` is a decorator (is an additional function of
     `gqylpy_exception`), handles exceptions raised by the asynchronous function
     it decorates."""
     warnings.warn(
         f'will be deprecated soon, replaced to {TryExcept}.', DeprecationWarning
     )
-    return TryExcept(
-        etype,
-        silent_exc=silent_exc,
-        raw_exc   =raw_exc,
-        logger    =logger,
-        ereturn   =ereturn,
-        ecallback =ecallback,
-        eexit     =eexit
-    )
+    return TryExcept(etype, **kw)
 
 
 async def RetryAsync(
-        etype:      Optional[ExceptionTypes]    = None,
-        *,
-        count:      Optional[int]               = None,
-        cycle:      Optional[Union[int, float]] = None,
-        silent_exc: Optional[bool]              = None,
-        raw_exc:    Optional[bool]              = None,
-        logger:     Optional[ExceptionLogger]   = None
+        etype: ExceptionTypes              = None,
+        /, *,
+        count: Optional[int]               = None,
+        cycle: Optional[Union[int, float]] = None,
+        **kw
 ) -> Callable:
     """`RetryAsync` is a decorator (is an additional function of
     `gqylpy_exception`), retries exceptions raised by the asynchronous function
@@ -175,14 +160,7 @@ async def RetryAsync(
     warnings.warn(
         f'will be deprecated soon, replaced to {Retry}.', DeprecationWarning
     )
-    return Retry(
-        etype,
-        count     =count,
-        cycle     =cycle,
-        silent_exc=silent_exc,
-        raw_exc   =raw_exc,
-        logger    =logger
-    )
+    return Retry(etype, count=count, cycle=cycle, **kw)
 
 
 class _xe6_xad_x8c_xe7_x90_xaa_xe6_x80_xa1_xe7_x8e_xb2_xe8_x90_x8d_xe4_xba_x91:
