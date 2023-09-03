@@ -35,10 +35,10 @@ ExceptionCallback = Callable[[Exception, Function, '...'], None]
 
 
 class GqylpyError(Exception):
-    __module__ = Exception.__module__
+    __module__ = builtins.__name__
 
     def __init_subclass__(cls) -> None:
-        cls.__module__ = GqylpyError.__module__
+        cls.__module__ = builtins.__name__
         setattr(builtins, cls.__name__, cls)
 
     msg: Any = Exception.args
@@ -52,7 +52,7 @@ class MasqueradeClass(type):
     Masquerade one class as another (default masquerade as first parent class).
     Warning, masquerade the class can cause unexpected problems, use caution.
     """
-    __module__   = type.__module__
+    __module__   = builtins.__name__
 
     __qualname__ = type.__qualname__
     # Warning, masquerade (modify) this attribute will cannot create the
@@ -74,10 +74,9 @@ class MasqueradeClass(type):
         if cls.__module__ != __masquerade_class__.__module__:
             setattr(sys.modules[__masquerade_class__.__module__], __name__, cls)
 
-        cls.__real_name__        = __name__
-        cls.__real_module__      = __package__
-        cls.__masquerade_class__ = __masquerade_class__
-        cls.__module__           = __masquerade_class__.__module__
+        cls.__realname__   = __name__
+        cls.__realmodule__ = cls.__module__
+        cls.__module__     = __masquerade_class__.__module__
 
         # cls.__qualname__ = __masquerade_class__.__qualname__
         # Masquerade (modify) this attribute will cannot create the portable
@@ -94,6 +93,12 @@ class MasqueradeClass(type):
     def __eq__(cls, o) -> bool:
         return True if o is cls.__masquerade_class__ else type.__eq__(cls, o)
 
+    def __init_subclass__(mcs) -> None:
+        setattr(builtins, mcs.__name__, mcs)
+        mcs.__name__     = MasqueradeClass.__name__
+        mcs.__qualname__ = MasqueradeClass.__qualname__
+        mcs.__module__   = MasqueradeClass.__module__
+
 
 MasqueradeClass.__name__ = type.__name__
 builtins.MasqueradeClass = MasqueradeClass
@@ -103,13 +108,10 @@ class __history__(dict, metaclass=type('SingletonMode', (MasqueradeClass,), {
     '__new__': lambda *a: MasqueradeClass.__new__(*a)()
 })):
 
-    def __setitem__(self, key: str, value: Type[GqylpyError], /) -> None:
-        self.__delitem__(depth=2)
-        dict.__setitem__(self, key, value)
+    def __setitem__(self, *a, **kw) -> None:
+        raise __getattr__('ReadOnlyError')('this dictionary is read-only.')
 
-    def __delitem__(self, *a, depth: int = 1) -> None:
-        if sys._getframe(depth).f_code is not __getattr__.__code__:
-            raise __getattr__('ReadOnlyError')('this dictionary is read-only.')
+    __delitem__ = setdefault = update = pop = popitem = clear = __setitem__
 
     def __reduce_ex__(self, protocol: int) -> ...:
         return self.__class__, (dict(self),)
@@ -137,7 +139,9 @@ def __getattr__(ename: str, /) -> Union[Type[BaseException], Type[GqylpyError]]:
             'end with "Error".', stacklevel=2
         )
 
-    eclass = __history__[ename] = type(ename, (GqylpyError,), {})
+    eclass = type(ename, (GqylpyError,), {})
+    dict.__setitem__(__history__, ename, eclass)
+
     return eclass
 
 
