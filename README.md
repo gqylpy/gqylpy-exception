@@ -2,12 +2,12 @@
 [![Release](https://img.shields.io/github/release/gqylpy/gqylpy-exception.svg?style=flat-square")](https://github.com/gqylpy/gqylpy-exception/releases/latest)
 [![Python Versions](https://img.shields.io/pypi/pyversions/gqylpy_exception)](https://pypi.org/project/gqylpy_exception)
 [![License](https://img.shields.io/pypi/l/gqylpy_exception)](https://github.com/gqylpy/gqylpy-exception/blob/master/LICENSE)
-[![Downloads](https://pepy.tech/badge/gqylpy_exception/month)](https://pepy.tech/project/gqylpy_exception)
+[![Downloads](https://static.pepy.tech/badge/gqylpy_exception/month)](https://pepy.tech/project/gqylpy_exception)
 
 # gqylpy-exception
 
 
-> 在执行 `raise` 语句的同时创建异常类，无需事先定义异常类，方便快捷。例如，你想抛出一个名为 `NotUnderstandError` 的异常，
+> 在执行 `raise` 语句的同时创建异常类，无需提前定义异常类，方便快捷。例如，你想抛出一个名为 `NotUnderstandError` 的异常，
 > 导入 `import gqylpy_exception as ge` 后直接执行 `raise ge.NotUnderstandError` 即可。
 
 <kbd>pip3 install gqylpy_exception</kbd>

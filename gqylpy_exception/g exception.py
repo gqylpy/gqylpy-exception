@@ -23,7 +23,10 @@ import builtins
 import functools
 import traceback
 
-from typing import TypeVar, Type, Optional, Union, Tuple, Callable, Any
+from copy import copy, deepcopy
+
+from typing import \
+    TypeVar, Type, Optional, Union, Tuple, Callable, NoReturn, Any
 
 Function = Closure = TypeVar('Function', bound=Callable)
 
@@ -32,76 +35,123 @@ ExceptionLogger   = Union[logging.Logger, 'gqylpy_log']
 ExceptionCallback = Callable[[Exception, Function, '...'], None]
 
 
-class GqylpyException:
-    __history__ = {}
+class GqylpyError(Exception):
+    __module__ = builtins.__name__
 
-    def __getattr__(self, ename: str) -> Type['GqylpyError']:
-        try:
-            eclass = self.__history__[ename]
-        except KeyError:
-            if ename[:2] == ename[-2:] == '__' and \
-                    ename[2] != '_' and ename[-3] != '_':
-                # Some special modules may attempt to call non-built-in magic
-                # method, such as `copy`, `pickle`. Compatible for this purpose.
-                raise AttributeError(
-                    f'"{__package__}" has no attribute "{ename}".'
-                ) from None
-            if hasattr(builtins, ename):
-                raise self.ExceptionClassIsBuiltinsError(
-                    f'exception class "{ename}" is builtins.'
-                ) from None
-            if ename[-5:] != 'Error':
-                warnings.warn(
-                    f'strange exception class "{ename}", exception class name '
-                    'should end with "Error".', stacklevel=2
-                )
-            eclass = self.__history__[ename] = type(
-                ename, (self.GqylpyError,), {'__module__': 'builtins'}
-            )
-            # Compatible with object serialization.
-            setattr(builtins, ename, eclass)
-        return eclass
+    def __init_subclass__(cls) -> None:
+        cls.__module__ = builtins.__name__
+        setattr(builtins, cls.__name__, cls)
 
-    def __getitem__(self, ename: str) -> Type['GqylpyError']:
-        return getattr(self, ename)
-
-    class GqylpyError(Exception):
-        __module__ = 'builtins'
-
-        @property
-        def msg(self) -> Any:
-            return self.args[0] if len(self.args) == 1 else \
-                self.args if self.args else None
+    msg: Any = Exception.args
 
 
-# Compatible with object serialization, for `GqylpyException.GqylpyError`.
-builtins.GqylpyException = GqylpyException
-
-ParameterError = GqylpyException().ParameterError
+builtins.GqylpyError = GqylpyError
 
 
-def stderr(einfo: str) -> None:
-    now: str = time.strftime('%F %T', time.localtime())
-    sys.stderr.write(f'[{now}] {einfo}\n')
+class MasqueradeClass(type):
+    """
+    Masquerade one class as another (default masquerade as first parent class).
+    Warning, masquerade the class can cause unexpected problems, use caution.
+    """
+    __module__   = builtins.__name__
 
+    __qualname__ = type.__qualname__
+    # Warning, masquerade (modify) this attribute will cannot create the
+    # portable serialized representation. In practice, however, this metaclass
+    # often does not need to be serialized, so we try to ignore it.
 
-def get_logger(logger: logging.Logger) -> Callable[[str], None]:
-    if logger is None:
-        return stderr
-
-    if not (
-            isinstance(logger, logging.Logger) or
-            getattr(logger, '__package__', None) == 'gqylpy_log'
-    ):
-        raise ParameterError(
-            'parameter "logger" must be an instance of "logging.Logger", '
-            f'not "{logger.__class__.__name__}".'
+    def __new__(mcs, __name__: str, __bases__: tuple, __dict__: dict):
+        __masquerade_class__: Type[object] = __dict__.setdefault(
+            '__masquerade_class__', __bases__[0] if __bases__ else object
         )
 
-    if sys._getframe(2).f_code is Retry.__init__.__code__:
-        return logger.warning
+        if not isinstance(__masquerade_class__, type):
+            raise TypeError('"__masquerade_class__" is not a class.')
 
-    return logger.error
+        cls = type.__new__(
+            mcs, __masquerade_class__.__name__, __bases__, __dict__
+        )
+
+        if cls.__module__ != __masquerade_class__.__module__:
+            setattr(sys.modules[__masquerade_class__.__module__], __name__, cls)
+
+        cls.__realname__   = __name__
+        cls.__realmodule__ = cls.__module__
+        cls.__module__     = __masquerade_class__.__module__
+
+        # cls.__qualname__ = __masquerade_class__.__qualname__
+        # Masquerade (modify) this attribute will cannot create the portable
+        # serialized representation. We have not yet found an effective
+        # solution, and we will continue to follow up.
+
+        return cls
+
+    def __hash__(cls) -> int:
+        if sys._getframe(1).f_code in (deepcopy.__code__, copy.__code__):
+            return type.__hash__(cls)
+        return hash(cls.__masquerade_class__)
+
+    def __eq__(cls, o) -> bool:
+        return True if o is cls.__masquerade_class__ else type.__eq__(cls, o)
+
+    def __init_subclass__(mcs) -> None:
+        setattr(builtins, mcs.__name__, mcs)
+        mcs.__name__     = MasqueradeClass.__name__
+        mcs.__qualname__ = MasqueradeClass.__qualname__
+        mcs.__module__   = MasqueradeClass.__module__
+
+
+MasqueradeClass.__name__ = type.__name__
+builtins.MasqueradeClass = MasqueradeClass
+
+
+class __history__(dict, metaclass=type('SingletonMode', (MasqueradeClass,), {
+    '__new__': lambda *a: MasqueradeClass.__new__(*a)()
+})):
+
+    def __setitem__(self, *a, **kw) -> NoReturn:
+        raise GqylpyException().ReadOnlyError('this dictionary is read-only.')
+
+    __delitem__ = setdefault = update = pop = popitem = clear = __setitem__
+
+    def __reduce__(self) -> ...:
+        return self.__class__, (dict(self),)
+
+    def copy(self) -> '__history__.__class__':
+        return copy(self)
+
+
+class GqylpyException:
+
+    def __getattr__(
+            self, ename: str
+    ) -> Union[Type[GqylpyError], Type[BaseException]]:
+
+        if ename in __history__:
+            return __history__[ename]
+
+        if ename[:2] == ename[-2:] == '__' and \
+                ename[2] != '_' and ename[-3] != '_':
+            # Some special modules may attempt to call non-built-in magic
+            # method, such as `copy`, `pickle`. Compatible for this purpose.
+            raise AttributeError(f'"{__package__}" has no attribute "{ename}".')
+
+        eclass = getattr(builtins, ename, None)
+        if isinstance(eclass, type) and issubclass(eclass, BaseException):
+            return eclass
+
+        if ename[-5:] != 'Error':
+            warnings.warn(
+                f'strange exception class "{ename}", exception class name '
+                'should end with "Error".', stacklevel=2
+            )
+
+        eclass = type(ename, (GqylpyError,), {})
+        dict.__setitem__(__history__, ename, eclass)
+
+        return eclass
+
+    __getitem__ = __getattr__
 
 
 class TryExcept:
@@ -122,7 +172,7 @@ class TryExcept:
         self.etype      = etype
         self.silent_exc = silent_exc
         self.raw_exc    = raw_exc
-        self.logger     = get_logger(logger)
+        self.logger     = self.get_logger(logger)
         self.ereturn    = ereturn
         self.ecallback  = ecallback
         self.eexit      = eexit
@@ -134,10 +184,10 @@ class TryExcept:
             core = func.__closure__[1].cell_contents.core.__func__
         except (TypeError, IndexError, AttributeError):
             if asyncio.iscoroutinefunction(func):
-                self.core = self.core_async
+                self.core = self.acore
         else:
-            if core in (TryExcept.core_async, Retry.core_async):
-                self.core = self.core_async
+            if core in (TryExcept.acore, Retry.acore):
+                self.core = self.acore
 
         @functools.wraps(func, updated=('__dict__', '__globals__'))
         def inner(*a, **kw) -> Any:
@@ -152,7 +202,7 @@ class TryExcept:
             self.exception_handling(func, e, *a, **kw)
         return self.ereturn
 
-    async def core_async(self, func: Function, *a, **kw) -> Any:
+    async def acore(self, func: Function, *a, **kw) -> Any:
         try:
             return await func(*a, **kw)
         except self.etype as e:
@@ -206,6 +256,29 @@ class TryExcept:
         return f'[{func.__module__}.{func.__qualname__}.{eline}.' \
                f'{e.__class__.__name__}] {e}'
 
+    def get_logger(self, logger: logging.Logger) -> Callable[[str], None]:
+        if logger is None:
+            return self.stderr
+
+        if not (
+                isinstance(logger, logging.Logger) or
+                getattr(logger, '__package__', None) == 'gqylpy_log'
+        ):
+            raise GqylpyException().ParameterError(
+                'parameter "logger" must be an instance of "logging.Logger", '
+                f'not "{logger.__class__.__name__}".'
+            )
+
+        if sys._getframe(2).f_code is Retry.__init__.__code__:
+            return logger.warning
+
+        return logger.error
+
+    @staticmethod
+    def stderr(einfo: str) -> None:
+        now: str = time.strftime('%F %T', time.localtime())
+        sys.stderr.write(f'[{now}] {einfo}\n')
+
 
 class Retry(TryExcept):
 
@@ -223,7 +296,7 @@ class Retry(TryExcept):
     ):
         if not (count.__class__ is int and count >= 0):
             if not (count.__class__ is str and count.isdigit()):
-                raise ParameterError(
+                raise GqylpyException().ParameterError(
                     'parameter "count" must be a positive integer or 0, '
                     f'not "{count}".'
                 )
@@ -233,14 +306,13 @@ class Retry(TryExcept):
             try:
                 cycle = float(cycle)
             except (TypeError, ValueError):
-                raise ParameterError(
-                    'parameter "count" must be a positive integer or 0, '
-                    f'not "{count}".'
+                raise GqylpyException().ParameterError(
+                    'parameter "cycle" type must be an int or float, '
+                    f'not "{cycle.__class__.__name__}".'
                 ) from None
         if cycle < 0:
-            raise ParameterError(
-                'parameter "count" must be a positive integer or 0, '
-                f'not "{count}".'
+            raise GqylpyException().ParameterError(
+                f'parameter "cycle" must be greater than 0, not {cycle}.'
             )
 
         self.count = count or 'N'
@@ -249,7 +321,6 @@ class Retry(TryExcept):
         TryExcept.__init__(
             self, etype, silent_exc=silent_exc, raw_exc=raw_exc, logger=logger
         )
-
     def core(self, func: Function, *a, **kw) -> Any:
         count = 0
 
@@ -264,7 +335,7 @@ class Retry(TryExcept):
 
             time.sleep(self.cycle)
 
-    async def core_async(self, func: Function, *a, **kw) -> Any:
+    async def acore(self, func: Function, *a, **kw) -> Any:
         count = 0
 
         while True:
@@ -277,6 +348,3 @@ class Retry(TryExcept):
                     raise e
 
             await asyncio.sleep(self.cycle)
-
-
-TryExceptAsync, RetryAsync = TryExcept, Retry
