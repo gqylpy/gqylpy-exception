@@ -5,7 +5,7 @@ need to define an exception class in advance, Convenient and Fast.
     >>> import gqylpy_exception as ge
     >>> raise ge.AnError(...)
 
-    @version: 2.0.4
+    @version: 2.1
     @author: 竹永康 <gqylpy@outlook.com>
     @source: https://github.com/gqylpy/gqylpy-exception
 
@@ -25,7 +25,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import logging
-import warnings
 
 from typing import Type, Optional, Union, Tuple, Dict, Callable, Any
 
@@ -34,24 +33,35 @@ ExceptionLogger   = Union[logging.Logger, 'gqylpy_log']
 ExceptionCallback = Callable[[Exception, Callable, '...'], None]
 
 
-def __getattr__(ename: str) -> Type['GqylpyError']:
-    return __history__.setdefault(ename, type(ename, (GqylpyError,), {}))
-
-
-def __getitem__(ename: str) -> Type['GqylpyError']:
-    return __getattr__(ename)
-
-
-__history__: Dict[str, Type['GqylpyError']]
-# All the exception classes you've ever created are here.
-
-
 class GqylpyError(Exception):
     """
     All exception classes created with `gqylpy_exception` inherit from it, you
     can use it to handle any exception created by `gqylpy_exception`.
     """
     msg: Any
+
+
+__history__: Dict[str, Type[GqylpyError]]
+# All the exception classes you've ever created are here.
+# this dictionary is read-only.
+
+
+def __getattr__(ename: str) -> Type[GqylpyError]:
+    """
+    Create an exception type called `ename` and return it.
+
+    The created exception type will be stored to the dictionary `__history__`,
+    and when you create an exception type with the same name again, directly get
+    the value from this dictionary, rather than being created repeatedly.
+
+    For Python built-in exception types, returned directly, are not repeatedly
+    creation, and not stored to dictionary `__history__`.
+    """
+    return __history__.setdefault(ename, type(ename, (GqylpyError,), {}))
+
+
+def __getitem__(ename: str) -> Type[GqylpyError]:
+    return __getattr__(ename)
 
 
 def TryExcept(
@@ -131,8 +141,8 @@ def Retry(
     """
 
 
-async def TryExceptAsync(
-        etype:      Union[ExceptionTypes],
+async def ATryExcept(
+        etype:      ExceptionTypes,
         *,
         silent_exc: Optional[bool]              = None,
         raw_exc:    Optional[bool]              = None,
@@ -141,12 +151,9 @@ async def TryExceptAsync(
         ecallback:  Optional[ExceptionCallback] = None,
         eexit:      Optional[bool]              = None
 ) -> Callable:
-    """`TryExceptAsync` is a decorator (is an additional function of
+    """`ATryExcept` is a decorator (is an additional function of
     `gqylpy_exception`), handles exceptions raised by the asynchronous function
     it decorates."""
-    warnings.warn(
-        f'will be deprecated soon, replaced to {TryExcept}.', DeprecationWarning
-    )
     return TryExcept(
         etype,
         silent_exc=silent_exc,
@@ -158,7 +165,7 @@ async def TryExceptAsync(
     )
 
 
-async def RetryAsync(
+async def ARetry(
         etype:      Optional[ExceptionTypes]    = None,
         *,
         count:      Optional[int]               = None,
@@ -167,12 +174,8 @@ async def RetryAsync(
         raw_exc:    Optional[bool]              = None,
         logger:     Optional[ExceptionLogger]   = None
 ) -> Callable:
-    """`RetryAsync` is a decorator (is an additional function of
-    `gqylpy_exception`), retries exceptions raised by the asynchronous function
-    it decorates."""
-    warnings.warn(
-        f'will be deprecated soon, replaced to {Retry}.', DeprecationWarning
-    )
+    """`ARetry` is a decorator (is an additional function of `gqylpy_exception`
+    ), retries exceptions raised by the asynchronous function it decorates."""
     return Retry(
         etype,
         count     =count,
@@ -183,11 +186,33 @@ async def RetryAsync(
     )
 
 
+async def TryExceptAsync(etype: ExceptionTypes, **kw) -> Callable:
+    warnings.warn(
+        f'will be deprecated soon, replaced to {ATryExcept}.',
+        DeprecationWarning
+    )
+    return await ATryExcept(etype, **kw)
+
+
+async def RetryAsync(
+        etype: ExceptionTypes              = None,
+        *,
+        count: Optional[int]               = None,
+        cycle: Optional[Union[int, float]] = None,
+        **kw
+) -> Callable:
+    warnings.warn(
+        f'will be deprecated soon, replaced to {ARetry}.', DeprecationWarning
+    )
+    return await ARetry(etype, count=count, cycle=cycle, **kw)
+
+
 class _xe6_xad_x8c_xe7_x90_xaa_xe6_x80_xa1_xe7_x8e_xb2_xe8_x90_x8d_xe4_xba_x91:
     import sys
 
     if sys.platform != 'linux' or \
             logging.__file__[:-20] == __file__[:-len(__name__) - 27]:
+
         gpack = globals()
         gpath = f'{__name__}.g {__name__[7:]}'
         gcode = __import__(gpath, fromlist=...)
@@ -198,7 +223,7 @@ class _xe6_xad_x8c_xe7_x90_xaa_xe6_x80_xa1_xe7_x8e_xb2_xe8_x90_x8d_xe4_xba_x91:
             if gname[0] != '_':
                 try:
                     gfunc = getattr(gcode, gname)
-                    assert gfunc.__module__ in (gpath, __package__)
+                    assert gfunc.__module__ == gpath
                 except (AttributeError, AssertionError):
                     continue
                 gfunc.__module__ = __package__
@@ -213,5 +238,10 @@ class _xe6_xad_x8c_xe7_x90_xaa_xe6_x80_xa1_xe7_x8e_xb2_xe8_x90_x8d_xe4_xba_x91:
 
         ge.__class__.__qualname__ = __package__
         ge.__class__.__module__   = __package__
+
+        ge.__history__ = gcode.__history__
+
+        ge.ATryExcept = ge.TryExceptAsync = ge.TryExcept
+        ge.ARetry     = ge.RetryAsync     = ge.Retry
 
         sys.modules[__name__] = ge
