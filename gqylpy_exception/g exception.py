@@ -1,5 +1,5 @@
 """
-Copyright (c) 2022, 2023 GQYLPY <http://gqylpy.com>. All rights reserved.
+Copyright (c) 2022-2024 GQYLPY <http://gqylpy.com>. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ class MasqueradeClass(type):
     Masquerade one class as another (default masquerade as first parent class).
     Warning, masquerade the class can cause unexpected problems, use caution.
     """
-    __module__   = builtins.__name__
+    __module__ = builtins.__name__
 
     __qualname__ = type.__qualname__
     # Warning, masquerade (modify) this attribute will cannot create the
@@ -129,9 +129,9 @@ def __getattr__(ename: str, /) -> Union[Type[BaseException], Type[GqylpyError]]:
         # such as `copy`, `pickle`. Compatible for this purpose.
         raise AttributeError(f'"{__package__}" has no attribute "{ename}".')
 
-    eclass = getattr(builtins, ename, None)
-    if isinstance(eclass, type) and issubclass(eclass, BaseException):
-        return eclass
+    etype = getattr(builtins, ename, None)
+    if isinstance(etype, type) and issubclass(etype, BaseException):
+        return etype
 
     if ename[-5:] != 'Error':
         warnings.warn(
@@ -139,10 +139,10 @@ def __getattr__(ename: str, /) -> Union[Type[BaseException], Type[GqylpyError]]:
             'end with "Error".', stacklevel=2
         )
 
-    eclass = type(ename, (GqylpyError,), {})
-    dict.__setitem__(__history__, ename, eclass)
+    etype = type(ename, (GqylpyError,), {})
+    dict.__setitem__(__history__, ename, etype)
 
-    return eclass
+    return etype
 
 
 def stderr(einfo: str) -> None:
@@ -197,10 +197,10 @@ class TryExcept:
             core = func.__closure__[1].cell_contents.core.__func__
         except (TypeError, IndexError, AttributeError):
             if asyncio.iscoroutinefunction(func):
-                self.core = self.core_async
+                self.core = self.acore
         else:
-            if core in (TryExcept.core_async, Retry.core_async):
-                self.core = self.core_async
+            if core in (TryExcept.acore, Retry.acore):
+                self.core = self.acore
 
         @functools.wraps(func, updated=('__dict__', '__globals__'))
         def inner(*a, **kw) -> Any:
@@ -215,7 +215,7 @@ class TryExcept:
             self.exception_handling(func, e, *a, **kw)
         return self.ereturn
 
-    async def core_async(self, func: Function, *a, **kw) -> Any:
+    async def acore(self, func: Function, *a, **kw) -> Any:
         try:
             return await func(*a, **kw)
         except self.etype as e:
@@ -324,7 +324,7 @@ class Retry(TryExcept):
 
             time.sleep(self.cycle)
 
-    async def core_async(self, func: Function, *a, **kw) -> Any:
+    async def acore(self, func: Function, *a, **kw) -> Any:
         count = 0
 
         while True:

@@ -18,11 +18,14 @@ setuptools.setup(
     license='Apache 2.0',
     url='http://gqylpy.com',
     project_urls={'Source': source},
-    description='在执行 raise 语句的同时创建异常类，无需提前定义异常类，方便快捷。',
+    description='''
+        Raise exceptions while creating exception classes on the fly, without
+        the need to predefine them beforehand.
+    '''.strip().replace('\n       ', ''),
     long_description=open('README.md', encoding='utf8').read(),
     long_description_content_type='text/markdown',
     packages=[g.__name__],
-    python_requires='>=3.8, <4',
+    python_requires='>=3.8',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
@@ -38,6 +41,7 @@ setuptools.setup(
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
-        'Programming Language :: Python :: 3.12'
+        'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13'
     ]
 )
