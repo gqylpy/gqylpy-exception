@@ -5,27 +5,28 @@
 [![Downloads](https://static.pepy.tech/badge/gqylpy_exception)](https://pepy.tech/project/gqylpy_exception)
 
 # gqylpy-exception
+English | [中文](https://github.com/gqylpy/gqylpy-exception/blob/master/README_CN.md)
 
-
-> 在执行 `raise` 语句的同时创建异常类，无需提前定义异常类，方便快捷。例如，你想抛出一个名为 `NotUnderstandError` 的异常，
-> 导入 `import gqylpy_exception as ge` 后直接执行 `raise ge.NotUnderstandError` 即可。
+Raise exceptions while creating exception classes on the fly, without the need to predefine them beforehand. For instance, if you want to raise an exception named `NotUnderstandError`, simply import `import gqylpy_exception as ge` and execute `raise ge.NotUnderstandError` directly for convenience and efficiency.
 
 <kbd>pip3 install gqylpy_exception</kbd>
 
+###### Using `gqylpy_exception` to Create Exception Classes
 
-###### 使用 `gqylpy_exception` 创建异常类
 ```python
 import gqylpy_exception as ge
 
 raise ge.AnError(...)
 ```
-`gqylpy_exception` 可以创建任意名称的异常类。`AnError` 不是 `gqylpy_exception` 中内置的，它是在你的代码执行到 `ge.` 
-时创建的，魔化方法 `__getattr__` 的特性。
 
-还有一种用法，导入即创建：
+With `gqylpy_exception`, you can create exception classes with arbitrary names. `AnError` is not predefined in `gqylpy_exception`; it is dynamically created when your code executes `ge.` due to the magic method `__getattr__`.
+
+Alternatively, you can also create exceptions upon import:
+
 ```python
 from gqylpy_exception import AnError
 
 raise AnError(...)
 ```
-最后，`gqylpy_exception` 不会重复创建异常类，创建过的异常类将存入 `ge.__history__` 字典，当你再次创建时从这个字典中取值。
+
+Lastly, `gqylpy_exception` avoids duplicate creation of exception classes. Once an exception class has been created, it is stored in the `ge.__history__` dictionary. When you attempt to create the same exception again, it will be retrieved from this dictionary.
