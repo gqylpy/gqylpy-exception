@@ -19,8 +19,9 @@ setuptools.setup(
     url='http://gqylpy.com',
     project_urls={'Source': source},
     description='''
-        Raise exceptions while creating exception classes on the fly, without
-        the need to predefine them beforehand.
+        `gqylpy-exception` is a flexible and convenient Python exception
+        handling library that allows you to dynamically create exception classes
+        and provides various exception handling mechanisms.
     '''.strip().replace('\n       ', ''),
     long_description=open('README.md', encoding='utf8').read(),
     long_description_content_type='text/markdown',
