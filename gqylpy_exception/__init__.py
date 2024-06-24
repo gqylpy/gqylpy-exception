@@ -1,11 +1,27 @@
 """
-Create the exception class while executing the `raise` statement, you no longer
-need to define an exception class in advance, Convenient and Fast.
+`gqylpy-exception` is a flexible and convenient Python exception handling
+library that allows you to dynamically create exception classes and provides
+various exception handling mechanisms.
 
+    >>> # Dynamically Creating Exceptions.
     >>> import gqylpy_exception as ge
     >>> raise ge.AnError(...)
 
-    @version: 3.0.1
+    >>> # Powerful Exception Handling Capabilities.
+    >>> from gqylpy_exception import TryExcept, Retry, TryContext
+
+    >>> @TryExcept(ValueError)
+    >>> def func():
+    >>>    int('a')
+
+    >>> @Retry(count=3, cycle=1)
+    >>> def func():
+    >>>     int('a')
+
+    >>> with TryContext(ValueError):
+    >>>     int('a')
+
+    @version: 3.1
     @author: 竹永康 <gqylpy@outlook.com>
     @source: https://github.com/gqylpy/gqylpy-exception
 
@@ -63,54 +79,75 @@ def __getattr__(ename: str, /) -> Type[GqylpyError]:
 def TryExcept(
         etype:      ExceptionTypes,
         /, *,
-        silent_exc: Optional[bool]              = None,
-        raw_exc:    Optional[bool]              = None,
+        silent:     Optional[bool]              = None,
+        raw:        Optional[bool]              = None,
+        last_tb:    Optional[bool]              = None,
         logger:     Optional[ExceptionLogger]   = None,
         ereturn:    Optional[Any]               = None,
         ecallback:  Optional[ExceptionCallback] = None,
         eexit:      Optional[bool]              = None
 ) -> Callable:
     """
-    `TryExcept` is a decorator (is an additional function of `gqylpy_exception`
-    ), handles exceptions raised by the function it decorates.
+    `TryExcept` is a decorator that handles exceptions raised by the function it
+    decorates.
 
         >>> @TryExcept(ValueError)
         >>> def func():
         >>>    int('a')
 
-    @param etype:      Which exceptions to handle.
-    @param silent_exc: If true, exception are processed silently without output,
-                       default False.
-    @param raw_exc:    If true, output the raw exception information directly,
-                       default False. Note priority lower than parameter
-                       `silent_exc`.
-    @param logger:     By default, exception information is output to terminal
-                       by `sys.stderr`. You can specify this parameter, if you
-                       want to output exception information using your logger,
-                       it will call the logger's `error` method.
-    @param ereturn:    If not None, it is returned after an exception is raised.
-    @param ecallback:  Receives a callable object and called it after an
-                       exception is raised. The callable object receive multiple
-                       parameters, raised exception object, function decorated
-                       and its arguments.
-    @param eexit:      If ture, will exit the program after the exception is
-                       triggered, exit code is 4. Default false.
+    @param etype:
+        The types of exceptions to be handled, multiple types can be passed in
+        using a tuple.
+
+    @param silent:
+        If True, exceptions will be silently handled without any output.
+        Defaults to False.
+
+    @param raw:
+        If True, raw exception information will be directly output. Defaults to
+        False. Note that its priority is lower than the `silent` parameter.
+
+    @param last_tb:
+        Whether to trace to the last traceback object of the exception. Defaults
+        to False, tracing only to the current code segment.
+
+    @param logger:
+        By default, exception information is output to the terminal via
+        `sys.stderr`. If you want to use your own logger to record exception
+        information, you can pass the logger to this parameter, and the `error`
+        method of the logger will be called internally.
+
+    @param ereturn:
+        The value to be returned when the decorated function raises an
+        exception. Defaults to None.
+
+    @param ecallback:
+        Accepts a callable object and invokes it when an exception is raised.
+        The callable object takes one argument, the raised exception object.
+
+    @param eexit:
+        If True, the program will execute `raise SystemExit(4)` and exit after
+        an exception is raised, with an exit code of 4. If the ecallback
+        parameter is provided, the program will execute the callback function
+        first before exiting. Defaults to False.
     """
 
 
 def Retry(
-        etype:      Optional[ExceptionTypes]    = None,
+        etype:   Optional[ExceptionTypes]    = None,
         /, *,
-        count:      Optional[int]               = None,
-        cycle:      Optional[Union[int, float]] = None,
-        silent_exc: Optional[bool]              = None,
-        raw_exc:    Optional[bool]              = None,
-        logger:     Optional[ExceptionLogger]   = None
+        count:   Optional[int]               = None,
+        cycle:   Optional[Union[int, float]] = None,
+        silent:  Optional[bool]              = None,
+        raw:     Optional[bool]              = None,
+        last_tb: Optional[bool]              = None,
+        logger:  Optional[ExceptionLogger]   = None
 ) -> Callable:
     """
-    `Retry` is a decorator (is an additional function of `gqylpy_exception`),
-    retries exceptions raised by the function it decorates. When an exception is
-    raised in function decorated, try to re-execute the function decorated.
+    `Retry` is a decorator that retries exceptions raised by the function it
+    decorates. When an exception is raised in the decorated function, it
+    attempts to re-execute the decorated function based on the parameters
+    `count` and `cycle`.
 
         >>> @Retry(count=3, cycle=1)
         >>> def func():
@@ -121,26 +158,39 @@ def Retry(
         >>> def func():
         >>>     int('a')
 
-    @param etype:      Which exceptions to retry, default try all exceptions to
-                       `Exception` and its subclasses.
-    @param count:      The retry count, 0 means infinite, default infinite.
-    @param cycle:      The retry cycle, default 0.
-    @param silent_exc: If true, exception are processed silently without output,
-                       default False.
-    @param raw_exc:    If true, output the raw exception information directly,
-                       default False. Note priority lower than parameter
-                       `silent_exc`.
-    @param logger:     By default, exception information is output to terminal
-                       by `sys.stderr`. You can specify this parameter, if you
-                       want to output exception information using your logger,
-                       it will call the logger's `warning` method.
+    @param etype:
+        The types of exceptions to be handled, multiple types can be specified
+        by passing them in a tuple. The default is `Exception`.
+
+    @param count:
+        The number of retries, 0 means infinite retries, infinite by default.
+
+    @param cycle:
+        Retry cycle (time between retries), with a default of 0 seconds.
+
+    @param silent:
+        If True, exceptions will be silently handled without any output.
+        Defaults to False.
+
+    @param raw:
+        If True, raw exception information will be directly output. Defaults to
+        False. Note that its priority is lower than the `silent` parameter.
+
+    @param last_tb:
+        Whether to trace to the last traceback object of the exception. Defaults
+        to False, tracing only to the current code segment.
+
+    @param logger:
+        By default, exception information is output to the terminal via
+        `sys.stderr`. If you want to use your own logger to record exception
+        information, you can pass the logger to this parameter, and the `error`
+        method of the logger will be called internally.
     """
 
 
 async def TryExceptAsync(etype: ExceptionTypes, /, **kw) -> Callable:
-    """`TryExceptAsync` is a decorator (is an additional function of
-    `gqylpy_exception`), handles exceptions raised by the asynchronous function
-    it decorates."""
+    """`TryExcept` is a decorator that handles exceptions raised by the
+    asynchronous function it decorates."""
     warnings.warn(
         f'will be deprecated soon, replaced to {TryExcept}.', DeprecationWarning
     )
@@ -154,13 +204,65 @@ async def RetryAsync(
         cycle: Optional[Union[int, float]] = None,
         **kw
 ) -> Callable:
-    """`RetryAsync` is a decorator (is an additional function of
-    `gqylpy_exception`), retries exceptions raised by the asynchronous function
-    it decorates."""
+    """`Retry` is a decorator that retries exceptions raised by the asynchronous
+    function it decorates. When an exception is raised in the decorated
+    asynchronous function, it attempts to re-execute the decorated asynchronous
+    function based on the parameters `count` and `cycle`."""
     warnings.warn(
         f'will be deprecated soon, replaced to {Retry}.', DeprecationWarning
     )
     return Retry(etype, count=count, cycle=cycle, **kw)
+
+
+def TryContext(
+        etype:      ExceptionTypes,
+        /, *,
+        silent:     Optional[bool]              = None,
+        raw:        Optional[bool]              = None,
+        last_tb:    Optional[bool]              = None,
+        logger:     Optional[ExceptionLogger]   = None,
+        ecallback:  Optional[ExceptionCallback] = None,
+        eexit:      Optional[bool]              = None
+):
+    """
+    TryContext is a context manager that handles exceptions raised within the
+    context.
+
+        >>> with TryContext(ValueError):
+        >>>     int('a')
+
+    @param etype:
+        The types of exceptions to be handled, multiple types can be passed in
+        using a tuple.
+
+    @param silent:
+        If True, exceptions will be silently handled without any output.
+        Defaults to False.
+
+    @param raw:
+        If True, raw exception information will be directly output. Defaults to
+        False. Note that its priority is lower than the `silent` parameter.
+
+    @param last_tb:
+        Whether to trace to the last traceback object of the exception. Defaults
+        to False, tracing only to the current code segment.
+
+    @param logger:
+        By default, exception information is output to the terminal via
+        `sys.stderr`. If you want to use your own logger to record exception
+        information, you can pass the logger to this parameter, and the `error`
+        method of the logger will be called internally.
+
+    @param ecallback:
+        Accepts a callable object and invokes it when an exception is raised.
+        The callable object takes one argument, the raised exception object.
+
+    @param eexit:
+        If True, the program will execute `raise SystemExit(4)` and exit after
+        an exception is raised, with an exit code of 4. If the ecallback
+        parameter is provided, the program will execute the callback function
+        first before exiting. Defaults to False.
+    """
 
 
 class _xe6_xad_x8c_xe7_x90_xaa_xe6_x80_xa1_xe7_x8e_xb2_xe8_x90_x8d_xe4_xba_x91:

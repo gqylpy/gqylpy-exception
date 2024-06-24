@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import re
 import sys
 import time
 import logging
@@ -24,14 +23,30 @@ import functools
 import traceback
 
 from copy import copy, deepcopy
+from contextlib import contextmanager
 
-from typing import TypeVar, Type, Optional, Union, Tuple, Callable, Any
+from types import FunctionType, FrameType, TracebackType
+from typing import TypeVar, Type,  Final, Optional, Union, Tuple, Callable, Any
 
-Function = Closure = TypeVar('Function', bound=Callable)
+if sys.version_info >= (3, 9):
+    from typing import Annotated
+else:
+    class Annotated(metaclass=type('', (type,), {
+        '__new__': lambda *a: type.__new__(*a)()
+    })):
+        def __getitem__(self, *a): ...
+
+Closure = TypeVar('Closure', bound=Callable)
 
 ExceptionTypes    = Union[Type[Exception], Tuple[Type[Exception], ...]]
 ExceptionLogger   = Union[logging.Logger, 'gqylpy_log']
-ExceptionCallback = Callable[[Exception, Function, '...'], None]
+ExceptionCallback = Callable[[Exception, FunctionType, '...'], None]
+
+__unique__: Final[Annotated[object, 'A unique object.']] = object()
+
+__qualname__: Final[Annotated[str, '''
+    The alternative solution of the old version for `co_qualname` attribute.
+''']] = 'co_qualname' if sys.version_info >= (3, 11) else 'co_name'
 
 
 class GqylpyError(Exception):
@@ -145,54 +160,50 @@ def __getattr__(ename: str, /) -> Union[Type[BaseException], Type[GqylpyError]]:
     return etype
 
 
-def stderr(einfo: str) -> None:
-    now: str = time.strftime('%F %T', time.localtime())
-    sys.stderr.write(f'[{now}] {einfo}\n')
-
-
-def get_logger(logger: logging.Logger) -> Callable[[str], None]:
-    if logger is None:
-        return stderr
-
-    if not (
-            isinstance(logger, logging.Logger) or
-            getattr(logger, '__package__', None) == 'gqylpy_log'
-    ):
-        raise ValueError(
-            'parameter "logger" must be an instance of "logging.Logger", '
-            f'not "{logger.__class__.__name__}".'
-        )
-
-    if sys._getframe(2).f_code is Retry.__init__.__code__:
-        return logger.warning
-
-    return logger.error
-
-
 class TryExcept:
 
     def __init__(
             self,
             etype:      ExceptionTypes,
             /, *,
-            silent_exc: bool                        = False,
-            raw_exc:    bool                        = False,
+            silent:     Optional[bool]              = None,
+            silent_exc: bool                        = __unique__,
+            raw:        Optional[bool]              = None,
+            raw_exc:    bool                        = __unique__,
+            last_tb:    bool                        = False,
             logger:     Optional[ExceptionLogger]   = None,
             ereturn:    Optional[Any]               = None,
             ecallback:  Optional[ExceptionCallback] = None,
             eexit:      bool                        = False
     ):
-        self.etype      = etype
-        self.silent_exc = silent_exc
-        self.raw_exc    = raw_exc
-        self.logger     = get_logger(logger)
-        self.ereturn    = ereturn
-        self.ecallback  = ecallback
-        self.eexit      = eexit
+        if silent_exc is not __unique__:
+            warnings.warn(
+                'parameter "silent_exc" will be deprecated soon, replaced to '
+                '"silent".', DeprecationWarning,
+                stacklevel=2 if self.__class__ is TryExcept else 3
+            )
+            if silent is None:
+                silent = silent_exc
 
-        self.local: bool = self.__class__ is TryExcept
+        if raw_exc is not __unique__:
+            warnings.warn(
+                'parameter "raw_exc" will be deprecated soon, replaced to '
+                '"raw".', DeprecationWarning,
+                stacklevel=2 if self.__class__ is TryExcept else 3
+            )
+            if raw is None:
+                raw = raw_exc
 
-    def __call__(self, func: Function) -> Closure:
+        self.etype     = etype
+        self.silent    = silent
+        self.raw       = raw
+        self.last_tb   = last_tb
+        self.logger    = get_logger(logger)
+        self.ereturn   = ereturn
+        self.ecallback = ecallback
+        self.eexit     = eexit
+
+    def __call__(self, func: FunctionType) -> Closure:
         try:
             core = func.__closure__[1].cell_contents.core.__func__
         except (TypeError, IndexError, AttributeError):
@@ -208,14 +219,14 @@ class TryExcept:
 
         return inner
 
-    def core(self, func: Function, *a, **kw) -> Any:
+    def core(self, func: FunctionType, *a, **kw) -> Any:
         try:
             return func(*a, **kw)
         except self.etype as e:
             self.exception_handling(func, e, *a, **kw)
         return self.ereturn
 
-    async def acore(self, func: Function, *a, **kw) -> Any:
+    async def acore(self, func: FunctionType, *a, **kw) -> Any:
         try:
             return await func(*a, **kw)
         except self.etype as e:
@@ -223,51 +234,14 @@ class TryExcept:
         return self.ereturn
 
     def exception_handling(
-            self, func: Function, e: Exception, *a, **kw
+            self, func: FunctionType, e: Exception, *a, **kw
     ) -> None:
-        if not self.silent_exc:
-            try:
-                einfo: str = self.exception_analysis(func, e)
-            except Exception as ee:
-                einfo: str = f'{self.__class__.__name__}Error: {ee}'
-            if not self.local:
-                einfo = f'[try:{kw["count"]}/{self.count}:{self.cycle}] {einfo}'
-            self.logger(einfo)
-
-        if self.local:
-            if self.ecallback:
-                self.ecallback(e, func, *a, **kw)
-            if self.eexit:
-                raise SystemExit(4)
-
-    def exception_analysis(self, func: Function, e: Exception) -> str:
-        einfo: str = traceback.format_exc()
-
-        if self.raw_exc:
-            return einfo
-
-        if isinstance(func, type):
-            filepath: str = sys.modules[func.__module__].__file__
-        else:
-            try:
-                filepath: str = func.__globals__['__file__']
-            except AttributeError:
-                filepath = None
-
-        if filepath is None:
-            eline = 'lineX'
-        else:
-            for line in reversed(einfo.split('\n')[1:-3]):
-                if filepath in line:
-                    eline: str = re.search(
-                        r'line \d+', line
-                    ).group().replace(' ', '')
-                    break
-            else:
-                eline = 'lineX'
-
-        return f'[{func.__module__}.{func.__qualname__}.{eline}.' \
-               f'{e.__class__.__name__}] {e}'
+        if not self.silent:
+            self.logger(get_einfo(e, raw=self.raw, last_tb=self.last_tb))
+        if self.ecallback is not None:
+            self.ecallback(e, func, *a, **kw)
+        if self.eexit:
+            raise SystemExit(4)
 
 
 class Retry(TryExcept):
@@ -277,9 +251,12 @@ class Retry(TryExcept):
             etype:      ExceptionTypes            = Exception,
             /, *,
             count:      int                       = 0,
-            cycle:      int                       = 0,
-            silent_exc: bool                      = False,
-            raw_exc:    bool                      = False,
+            cycle:      Union[int, float]         = 0,
+            silent:     Optional[bool]            = None,
+            silent_exc: bool                      = __unique__,
+            raw:        Optional[bool]            = None,
+            raw_exc:    bool                      = __unique__,
+            last_tb:    bool                      = None,
             logger:     Optional[ExceptionLogger] = None
     ):
         if not (count.__class__ is int and count >= 0):
@@ -307,10 +284,16 @@ class Retry(TryExcept):
         self.cycle = cycle
 
         TryExcept.__init__(
-            self, etype, silent_exc=silent_exc, raw_exc=raw_exc, logger=logger
+            self, etype,
+            silent    =silent,
+            silent_exc=silent_exc,
+            raw       =raw,
+            raw_exc   =raw_exc,
+            last_tb   =last_tb,
+            logger    =logger
         )
 
-    def core(self, func: Function, *a, **kw) -> Any:
+    def core(self, func: FunctionType, *a, **kw) -> Any:
         count = 0
 
         while True:
@@ -318,13 +301,13 @@ class Retry(TryExcept):
                 return func(*a, **kw)
             except self.etype as e:
                 count += 1
-                self.exception_handling(func, e, count=count)
+                self.exception_handling(e, count=count)
                 if count == self.count:
                     raise e
 
             time.sleep(self.cycle)
 
-    async def acore(self, func: Function, *a, **kw) -> Any:
+    async def acore(self, func: FunctionType, *a, **kw) -> Any:
         count = 0
 
         while True:
@@ -332,8 +315,93 @@ class Retry(TryExcept):
                 return await func(*a, **kw)
             except self.etype as e:
                 count += 1
-                self.exception_handling(func, e, count=count)
+                self.exception_handling(e, count=count)
                 if count == self.count:
                     raise e
 
             await asyncio.sleep(self.cycle)
+
+    def exception_handling(self, e: Exception, *, count: int) -> None:
+        if not self.silent:
+            einfo: str = get_einfo(e, raw=self.raw, last_tb=self.last_tb)
+            einfo = f'[try:{count}/{self.count}:{self.cycle}] {einfo}'
+            self.logger(einfo)
+
+
+@contextmanager
+def TryContext(
+        etype:     ExceptionTypes,
+        /, *,
+        silent:    bool                                  = False,
+        raw:       bool                                  = False,
+        last_tb:   bool                                  = False,
+        logger:    Optional[ExceptionLogger]             = None,
+        ecallback: Optional[Callable[[Exception], None]] = None,
+        eexit:     bool                                  = False
+):
+    logger = get_logger(logger)
+    try:
+        yield
+    except etype as e:
+        if not silent:
+            logger(get_einfo(e, raw=raw, last_tb=last_tb))
+        if ecallback is not None:
+            ecallback(e)
+        if eexit:
+            raise SystemExit(4)
+
+
+def stderr(einfo: str) -> None:
+    now: str = time.strftime('%F %T', time.localtime())
+    sys.stderr.write(f'[{now}] {einfo}\n')
+
+
+def get_logger(logger: logging.Logger) -> Callable[[str], None]:
+    if logger is None:
+        return stderr
+
+    is_glog_module: bool = getattr(logger, '__package__', None) == 'gqylpy_log'
+
+    if not (isinstance(logger, logging.Logger) or is_glog_module):
+        raise ValueError(
+            'parameter "logger" must be an instance of "logging.Logger", '
+            f'not "{logger.__class__.__name__}".'
+        )
+
+    last_frame: FrameType = sys._getframe(1)
+
+    if last_frame.f_back.f_code is Retry.__init__.__code__:
+        caller = logger.warning
+    else:
+        caller = logger.error
+
+    if last_frame.f_code is TryContext.__wrapped__.__code__:
+        stacklevel = 4
+    else:
+        stacklevel = 5
+
+    if is_glog_module:
+        caller = functools.partial(caller, stacklevel=stacklevel)
+
+    return caller
+
+
+def get_einfo(e: Exception, /, *, raw: bool, last_tb: bool) -> str:
+    try:
+        if raw:
+            return traceback.format_exc()
+
+        tb: TracebackType = e.__traceback__.tb_next
+
+        if last_tb:
+            while tb.tb_next:
+                tb = tb.tb_next
+
+        module: str = tb.tb_frame.f_globals['__name__']
+        name:   str = getattr(tb.tb_frame.f_code, __qualname__)
+        lineno: int = tb.tb_lineno
+        ename:  str = e.__class__.__name__
+
+        return f'[{module}.{name}.line{lineno}.{ename}] {e}'
+    except Exception as ee:
+        return f'TryError: {ee!r}'
