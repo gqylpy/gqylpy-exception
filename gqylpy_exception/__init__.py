@@ -12,7 +12,7 @@ various exception handling mechanisms.
 
     >>> @TryExcept(ValueError)
     >>> def func():
-    >>>    int('a')
+    >>>     int('a')
 
     >>> @Retry(count=3, cycle=1)
     >>> def func():
@@ -21,7 +21,7 @@ various exception handling mechanisms.
     >>> with TryContext(ValueError):
     >>>     int('a')
 
-    @version: 3.1
+    @version: 3.1.1
     @author: 竹永康 <gqylpy@outlook.com>
     @source: https://github.com/gqylpy/gqylpy-exception
 
@@ -223,7 +223,7 @@ def TryContext(
         logger:     Optional[ExceptionLogger]   = None,
         ecallback:  Optional[ExceptionCallback] = None,
         eexit:      Optional[bool]              = None
-):
+) -> None:
     """
     TryContext is a context manager that handles exceptions raised within the
     context.
