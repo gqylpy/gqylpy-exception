@@ -17,8 +17,8 @@ import sys
 import time
 import logging
 import asyncio
-import warnings
 import builtins
+import warnings
 import functools
 import traceback
 
@@ -26,7 +26,7 @@ from copy import copy, deepcopy
 from contextlib import contextmanager
 
 from types import FunctionType, FrameType, TracebackType
-from typing import TypeVar, Type,  Final, Optional, Union, Tuple, Callable, Any
+from typing import TypeVar, Type, Final, Optional, Union, Tuple, Callable, Any
 
 if sys.version_info >= (3, 9):
     from typing import Annotated
@@ -42,9 +42,9 @@ ExceptionTypes    = Union[Type[Exception], Tuple[Type[Exception], ...]]
 ExceptionLogger   = Union[logging.Logger, 'gqylpy_log']
 ExceptionCallback = Callable[[Exception, FunctionType, '...'], None]
 
-__unique__: Final[Annotated[object, 'A unique object.']] = object()
+UNIQUE: Final[Annotated[object, 'A unique object.']] = object()
 
-__qualname__: Final[Annotated[str, '''
+CO_QUALNAME: Final[Annotated[str, '''
     The alternative solution of the old version for `co_qualname` attribute.
 ''']] = 'co_qualname' if sys.version_info >= (3, 11) else 'co_name'
 
@@ -167,16 +167,16 @@ class TryExcept:
             etype:      ExceptionTypes,
             /, *,
             silent:     Optional[bool]              = None,
-            silent_exc: bool                        = __unique__,
+            silent_exc: bool                        = UNIQUE,
             raw:        Optional[bool]              = None,
-            raw_exc:    bool                        = __unique__,
+            raw_exc:    bool                        = UNIQUE,
             last_tb:    bool                        = False,
             logger:     Optional[ExceptionLogger]   = None,
             ereturn:    Optional[Any]               = None,
             ecallback:  Optional[ExceptionCallback] = None,
             eexit:      bool                        = False
     ):
-        if silent_exc is not __unique__:
+        if silent_exc is not UNIQUE:
             warnings.warn(
                 'parameter "silent_exc" will be deprecated soon, replaced to '
                 '"silent".', DeprecationWarning,
@@ -185,7 +185,7 @@ class TryExcept:
             if silent is None:
                 silent = silent_exc
 
-        if raw_exc is not __unique__:
+        if raw_exc is not UNIQUE:
             warnings.warn(
                 'parameter "raw_exc" will be deprecated soon, replaced to '
                 '"raw".', DeprecationWarning,
@@ -253,9 +253,9 @@ class Retry(TryExcept):
             count:      int                       = 0,
             cycle:      Union[int, float]         = 0,
             silent:     Optional[bool]            = None,
-            silent_exc: bool                      = __unique__,
+            silent_exc: bool                      = UNIQUE,
             raw:        Optional[bool]            = None,
-            raw_exc:    bool                      = __unique__,
+            raw_exc:    bool                      = UNIQUE,
             last_tb:    bool                      = None,
             logger:     Optional[ExceptionLogger] = None
     ):
@@ -338,7 +338,7 @@ def TryContext(
         logger:    Optional[ExceptionLogger]             = None,
         ecallback: Optional[Callable[[Exception], None]] = None,
         eexit:     bool                                  = False
-):
+) -> None:
     logger = get_logger(logger)
     try:
         yield
@@ -368,14 +368,14 @@ def get_logger(logger: logging.Logger) -> Callable[[str], None]:
             f'not "{logger.__class__.__name__}".'
         )
 
-    last_frame: FrameType = sys._getframe(1)
+    previous_frame: FrameType = sys._getframe(1)
 
-    if last_frame.f_back.f_code is Retry.__init__.__code__:
+    if previous_frame.f_back.f_code is Retry.__init__.__code__:
         caller = logger.warning
     else:
         caller = logger.error
 
-    if last_frame.f_code is TryContext.__wrapped__.__code__:
+    if previous_frame.f_code is TryContext.__wrapped__.__code__:
         stacklevel = 4
     else:
         stacklevel = 5
@@ -398,7 +398,7 @@ def get_einfo(e: Exception, /, *, raw: bool, last_tb: bool) -> str:
                 tb = tb.tb_next
 
         module: str = tb.tb_frame.f_globals['__name__']
-        name:   str = getattr(tb.tb_frame.f_code, __qualname__)
+        name:   str = getattr(tb.tb_frame.f_code, CO_QUALNAME)
         lineno: int = tb.tb_lineno
         ename:  str = e.__class__.__name__
 
