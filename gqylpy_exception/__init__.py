@@ -21,7 +21,7 @@ various exception handling mechanisms.
     >>> with TryContext(ValueError):
     >>>     int('a')
 
-    @version: 3.1.1
+    @version: 3.1.2
     @author: 竹永康 <gqylpy@outlook.com>
     @source: https://github.com/gqylpy/gqylpy-exception
 
@@ -41,12 +41,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import logging
+import warnings
 
 from typing import Type, Optional, Union, Tuple, Dict, Callable, Any
 
 ExceptionTypes    = Union[Type[Exception], Tuple[Type[Exception], ...]]
 ExceptionLogger   = Union[logging.Logger, 'gqylpy_log']
 ExceptionCallback = Callable[[Exception, Callable, '...'], None]
+
+warnings.warn(
+    'No longer maintained, please switch to `exceptionx`.', DeprecationWarning
+)
 
 
 class GqylpyError(Exception):
@@ -77,15 +82,15 @@ def __getattr__(ename: str, /) -> Type[GqylpyError]:
 
 
 def TryExcept(
-        etype:      ExceptionTypes,
+        etype:     ExceptionTypes,
         /, *,
-        silent:     Optional[bool]              = None,
-        raw:        Optional[bool]              = None,
-        last_tb:    Optional[bool]              = None,
-        logger:     Optional[ExceptionLogger]   = None,
-        ereturn:    Optional[Any]               = None,
-        ecallback:  Optional[ExceptionCallback] = None,
-        eexit:      Optional[bool]              = None
+        silent:    Optional[bool]              = None,
+        raw:       Optional[bool]              = None,
+        last_tb:   Optional[bool]              = None,
+        logger:    Optional[ExceptionLogger]   = None,
+        ereturn:   Optional[Any]               = None,
+        ecallback: Optional[ExceptionCallback] = None,
+        eexit:     Optional[bool]              = None
 ) -> Callable:
     """
     `TryExcept` is a decorator that handles exceptions raised by the function it
@@ -215,14 +220,14 @@ async def RetryAsync(
 
 
 def TryContext(
-        etype:      ExceptionTypes,
+        etype:     ExceptionTypes,
         /, *,
-        silent:     Optional[bool]              = None,
-        raw:        Optional[bool]              = None,
-        last_tb:    Optional[bool]              = None,
-        logger:     Optional[ExceptionLogger]   = None,
-        ecallback:  Optional[ExceptionCallback] = None,
-        eexit:      Optional[bool]              = None
+        silent:    Optional[bool]              = None,
+        raw:       Optional[bool]              = None,
+        last_tb:   Optional[bool]              = None,
+        logger:    Optional[ExceptionLogger]   = None,
+        ecallback: Optional[ExceptionCallback] = None,
+        eexit:     Optional[bool]              = None
 ) -> None:
     """
     TryContext is a context manager that handles exceptions raised within the
