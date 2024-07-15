@@ -13,16 +13,16 @@
 
 ## 动态创建异常
 
-使用 `gqylpy_exception`，你可以在需要时即时创建异常类，而无需提前定义。例如，如果你希望抛出一个名为 `NotUnderstandError` 的异常，只需导入库并以如下方式调用：
+使用 `gqylpy-exception`，你可以在需要时即时创建异常类，而无需提前定义。例如，如果你希望抛出一个名为 `NotUnderstandError` 的异常，只需导入库并以如下方式调用：
 ```python
 import gqylpy_exception as ge
 
 raise ge.NotUnderstandError(...)
 ```
 
-在这里，`NotUnderstandError` 并不是 `gqylpy_exception` 预先定义的，而是在你尝试访问 `ge.NotUnderstandError` 时通过魔化方法 `__getattr__` 动态创建的。这种灵活性意味着你可以根据需要创建任何名称的异常类。
+在这里，`NotUnderstandError` 并不是 `gqylpy-exception` 预先定义的，而是在你尝试访问 `ge.NotUnderstandError` 时通过魔化方法 `__getattr__` 动态创建的。这种灵活性意味着你可以根据需要创建任何名称的异常类。
 
-此外，`gqylpy_exception` 还确保不会重复创建相同的异常类。所有已创建的异常类都会被存储在 `ge.__history__` 字典中，以便后续快速访问。
+此外，`gqylpy-exception` 还确保不会重复创建相同的异常类。所有已创建的异常类都会被存储在 `ge.__history__` 字典中，以便后续快速访问。
 
 还有一种用法，导入即创建：
 ```python
